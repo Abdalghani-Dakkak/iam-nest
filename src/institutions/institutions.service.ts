@@ -22,15 +22,14 @@ export class InstitutionsService {
   ): Promise<Institution> {
     const { parentId, ...data } = createInstitutionDto;
     const parent = await this.resolveParent(parentId);
-    // No parentId => creating a root. Only one root is allowed in the tree.
+
     if (!parent) {
       await this.assertNoExistingRoot();
     }
     const institution = this.institutionsRepository.create(data);
     institution.parent = parent;
     institution.level = parent ? parent.level + 1 : 1;
-    // A node can't be active under an inactive parent — inherit the disabled
-    // state so the "inactive subtree" invariant holds for new children too.
+
     if (parent && !parent.isActive) {
       institution.isActive = false;
     }
@@ -38,16 +37,12 @@ export class InstitutionsService {
     return this.findOne(saved.id);
   }
 
-  // Flat list — every node carries `parentId` (via @RelationId) and `level`, so a
-  // client can rebuild the hierarchy without per-row relation joins.
   findAll(): Promise<Institution[]> {
     return this.institutionsRepository.find({
       order: { level: 'ASC', id: 'ASC' },
     });
   }
 
-  // Nested forest: roots, each with a recursively populated `children` array.
-  // Built in memory from a single query rather than N recursive ones.
   async findTree(): Promise<Institution[]> {
     const all = await this.institutionsRepository.find({
       order: { level: 'ASC', id: 'ASC' },
@@ -89,9 +84,6 @@ export class InstitutionsService {
     const institution = await this.findOne(id);
     Object.assign(institution, data);
 
-    // `parentId === undefined` => caller didn't touch the parent; `null` => move
-    // to root. Either way, re-parenting shifts this node's depth, so the whole
-    // subtree's levels are recomputed afterwards.
     const reparenting = parentId !== undefined;
     if (reparenting) {
       const parent = await this.resolveParent(parentId);
@@ -103,7 +95,6 @@ export class InstitutionsService {
         }
         await this.assertNotInSubtree(institution.id, parent.id);
       } else {
-        // Moving to root: reject if a different institution is already the root.
         await this.assertNoExistingRoot(institution.id);
       }
       institution.parent = parent;
@@ -114,8 +105,7 @@ export class InstitutionsService {
     if (reparenting) {
       await this.recomputeChildrenLevels(institution);
     }
-    // Activating/deactivating a node cascades the same flag to its whole
-    // subtree (only when isActive is actually part of the update).
+
     if (data.isActive !== undefined) {
       await this.cascadeActive(institution, data.isActive);
     }
@@ -133,9 +123,6 @@ export class InstitutionsService {
     return { deleted: true, id };
   }
 
-  // Enforces the single-root invariant: at most one institution may have no
-  // parent. `excludeId` lets an existing root stay root on update without
-  // conflicting with itself.
   private async assertNoExistingRoot(excludeId?: number): Promise<void> {
     const existingRoot = await this.institutionsRepository.findOne({
       where: { parent: IsNull() },
@@ -162,8 +149,6 @@ export class InstitutionsService {
     return parent;
   }
 
-  // Guards against cycles: walking up from the prospective parent must never
-  // reach the node being moved (that would make the node its own ancestor).
   private async assertNotInSubtree(
     nodeId: number,
     newParentId: number,
@@ -194,7 +179,6 @@ export class InstitutionsService {
     }
   }
 
-  // Propagates an isActive value down the whole subtree of `node`.
   private async cascadeActive(
     node: Institution,
     isActive: boolean,

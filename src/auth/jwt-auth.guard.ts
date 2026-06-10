@@ -13,6 +13,7 @@ export interface JwtPayload {
   sub: number;
   email: string;
   username: string;
+  sid?: number;
 }
 
 @Injectable()
@@ -41,7 +42,7 @@ export class JwtAuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: jwtConstants.secret,
       });
-      // Attach the decoded payload so handlers can read req.user.
+
       (request as Request & { user?: JwtPayload }).user = payload;
     } catch {
       throw new UnauthorizedException('Invalid or expired token');

@@ -25,7 +25,6 @@ export class InstitutionsController {
     return this.institutionsService.findAll();
   }
 
-  // Declared before ':id' so "tree" isn't matched as a record id.
   @Get('tree')
   findTree() {
     return this.institutionsService.findTree();

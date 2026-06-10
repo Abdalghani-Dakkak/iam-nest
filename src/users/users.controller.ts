@@ -16,8 +16,6 @@ import { Public } from '../auth/public.decorator';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // Public so a first user can be registered/bootstrapped without a token.
-  // Remove @Public() to make user creation admin-only (token required).
   @Public()
   @Post()
   create(@Body() createUserDto: CreateUserDto) {

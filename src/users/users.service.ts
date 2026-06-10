@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -29,7 +30,7 @@ export class UsersService {
     user.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
     user.role = roleId != null ? await this.resolveRole(roleId) : null;
     const saved = await this.usersRepository.save(user);
-    // Re-fetch so the response excludes the password hash (select: false).
+
     return this.findOne(saved.id);
   }
 
@@ -48,13 +49,23 @@ export class UsersService {
     return user;
   }
 
-  // Includes the password hash (column is select:false) for credential checks.
-  // Used by AuthService.login — do not return the result directly in a response.
+  async findWithPermissions(id: number): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: { role: { permissions: true }, directPermissions: true },
+    });
+    if (!user) {
+      throw new NotFoundException(`User #${id} not found`);
+    }
+    return user;
+  }
+
   findByEmailWithPassword(email: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
       .addSelect('user.password')
       .leftJoinAndSelect('user.role', 'role')
+      .leftJoinAndSelect('role.permissions', 'permissions')
       .where('user.email = :email', { email })
       .getOne();
   }
@@ -69,10 +80,31 @@ export class UsersService {
     if (password) {
       user.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
     }
-    // roleId present => (re)assign or clear the role; omitted => leave unchanged.
+
     if (roleId !== undefined) {
       user.role = roleId != null ? await this.resolveRole(roleId) : null;
     }
+    await this.usersRepository.save(user);
+    return this.findOne(id);
+  }
+
+  async changePassword(
+    id: number,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<User> {
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :id', { id })
+      .getOne();
+    if (!user) {
+      throw new NotFoundException(`User #${id} not found`);
+    }
+    if (!(await bcrypt.compare(oldPassword, user.password))) {
+      throw new UnauthorizedException('Old password is incorrect');
+    }
+    user.password = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
     await this.usersRepository.save(user);
     return this.findOne(id);
   }

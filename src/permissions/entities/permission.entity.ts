@@ -15,8 +15,7 @@ export class Permission {
   @Column({ unique: true, length: 100 })
   name!: string;
 
-  // Arabic display label for the permission, shown in the UI.
-  @Column({ nullable: true, length: 255 })
+  @Column({ type: 'varchar', nullable: true, length: 255 })
   label!: string | null;
 
   @Column({ nullable: true, length: 255 })

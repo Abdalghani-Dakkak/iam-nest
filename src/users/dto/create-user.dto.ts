@@ -51,7 +51,6 @@ export class CreateUserDto {
   @IsDateString()
   startDate?: string;
 
-  // For contractor accounts: the date their access expires.
   @IsOptional()
   @IsDateString()
   contractExpiry?: string;
@@ -70,7 +69,6 @@ export class CreateUserDto {
   @IsBoolean()
   isActive?: boolean;
 
-  // Single role assigned to the user (FK). Omit to leave the user role-less.
   @IsOptional()
   @IsInt()
   roleId?: number;

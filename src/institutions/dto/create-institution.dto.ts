@@ -14,7 +14,6 @@ export class CreateInstitutionDto {
   @MaxLength(255)
   name!: string;
 
-  // Organizational tier. `level` (numeric depth) is still derived from the tree.
   @IsOptional()
   @IsIn(['governorate', 'directorate', 'department', 'unit'])
   type?: InstitutionType;
@@ -38,8 +37,6 @@ export class CreateInstitutionDto {
   @IsBoolean()
   isActive?: boolean;
 
-  // Parent institution id. Omit (or send null) to create a top-level root.
-  // `level` is derived from the parent and must NOT be sent.
   @IsOptional()
   @IsInt()
   @Min(1)
