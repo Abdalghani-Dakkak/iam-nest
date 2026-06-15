@@ -45,7 +45,7 @@ export class User {
   @Column({ type: 'date', nullable: true })
   startDate!: string | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   lastLogin!: Date | null;
 
   @Column({ type: 'varchar', nullable: true, length: 255 })

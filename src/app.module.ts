@@ -27,9 +27,13 @@ import { Contractor } from './contractors/entities/contractor.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'mysql',
+      type: 'postgres',
 
       url: process.env.DATABASE_URL,
+      ssl:
+        process.env.DATABASE_SSL === 'false'
+          ? false
+          : { rejectUnauthorized: false },
       entities: [
         Permission,
         Role,

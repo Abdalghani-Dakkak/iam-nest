@@ -1,0 +1,32 @@
+# Render Blueprint — provisions the API web service + a managed PostgreSQL DB.
+# Deploy: push to GitHub, then in Render: New + → Blueprint → pick this repo.
+# Docs: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: iam-nest-db
+    plan: free # free Postgres is deleted after 30 days — upgrade for anything real
+    databaseName: iam_nest
+    user: iam_nest
+
+services:
+  - type: web
+    name: iam-nest
+    runtime: node
+    plan: free
+    region: frankfurt # pick the region closest to you / your DB
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: / # the @Public() GET / health route
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: iam-nest-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true # Render generates a strong secret once
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false # set in dashboard to your frontend URL(s), comma-separated
+      - key: NODE_VERSION
+        value: "22"

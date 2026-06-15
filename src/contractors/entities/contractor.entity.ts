@@ -52,13 +52,13 @@ export class Contractor {
   @Column({ type: 'varchar', length: 500, nullable: true })
   endReason!: string | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   endedAt!: Date | null;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
   extensionReason!: string | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   extendedAt!: Date | null;
 
   @ManyToMany(() => Institution)
