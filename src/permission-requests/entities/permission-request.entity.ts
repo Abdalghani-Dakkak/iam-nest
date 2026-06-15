@@ -58,7 +58,7 @@ export class PermissionRequest {
   @Column({ type: 'varchar', nullable: true, length: 500 })
   reviewNote!: string | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   reviewedAt!: Date | null;
 
   @CreateDateColumn()

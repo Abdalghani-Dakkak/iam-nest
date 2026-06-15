@@ -27,13 +27,13 @@ export class Session {
   @Column({ type: 'varchar', nullable: true, length: 512 })
   userAgent!: string | null;
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   expiresAt!: Date;
 
   @Column({ default: false })
   revoked!: boolean;
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   lastActiveAt!: Date;
 
   @CreateDateColumn()
