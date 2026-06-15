@@ -5,6 +5,7 @@
 databases:
   - name: iam-nest-db
     plan: free # free Postgres is deleted after 30 days — upgrade for anything real
+    region: frankfurt # MUST match the web service region, or the internal DB hostname won't resolve
     databaseName: iam_nest
     user: iam_nest
 
