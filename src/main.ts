@@ -5,8 +5,19 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const defaultOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://iam-gov.vercel.app',
+  ];
+  const allowedOrigins = (process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',')
+    : defaultOrigins
+  ).map((o) => o.trim());
+
   app.enableCors({
-    origin: (process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(','),
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Authorization',
