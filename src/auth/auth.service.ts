@@ -59,7 +59,13 @@ export class AuthService {
     );
     const session = await this.sessionsService.create(user, expiresAt, meta);
 
-    const tokens = await this.issueTokens(user, session.id);
+    const permissionEntities = await this.getMyPermissions(user.id);
+    const permissionNames = permissionEntities.map((p) => p.name);
+    const tokens = await this.issueTokens(
+      { ...user, role: user.role ?? null },
+      session.id,
+      permissionNames,
+    );
     await this.recordLogin(user, 'success', null);
     return this.buildAuthResult(user, tokens);
   }
@@ -153,7 +159,13 @@ export class AuthService {
     }
 
     await this.sessionsService.touch(session);
-    return this.issueTokens(user, session.id);
+    const permissionEntities = await this.getMyPermissions(user.id);
+    const permissionNames = permissionEntities.map((p) => p.name);
+    return this.issueTokens(
+      { ...user, role: user.role ?? null },
+      session.id,
+      permissionNames,
+    );
   }
 
   async getMyPermissions(userId: number): Promise<Permission[]> {
@@ -202,14 +214,18 @@ export class AuthService {
       id: number;
       email: string;
       username: string;
+      role?: { name: string } | null;
     },
     sid: number,
+    permissions: string[] = [],
   ): Promise<AuthTokens> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       username: user.username,
       sid,
+      permissions,
+      roleName: user.role?.name,
     };
 
     const [access_token, refresh_token] = await Promise.all([
