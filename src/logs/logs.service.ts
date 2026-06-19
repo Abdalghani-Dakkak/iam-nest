@@ -11,6 +11,7 @@ import { Log } from './entities/log.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateLogDto } from './dto/create-log.dto';
 import { QueryLogsDto } from './dto/query-logs.dto';
+import { LogsGateway } from './logs.gateway';
 
 @Injectable()
 export class LogsService {
@@ -19,6 +20,7 @@ export class LogsService {
     private readonly logsRepository: Repository<Log>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly logsGateway: LogsGateway,
   ) {}
 
   async create(createLogDto: CreateLogDto): Promise<Log> {
@@ -27,7 +29,9 @@ export class LogsService {
     if (userId !== undefined) {
       log.user = await this.resolveUser(userId);
     }
-    return this.logsRepository.save(log);
+    const saved = await this.logsRepository.save(log);
+    this.logsGateway.emitLog(saved);
+    return saved;
   }
 
   findAll(query: QueryLogsDto = {}): Promise<Log[]> {
