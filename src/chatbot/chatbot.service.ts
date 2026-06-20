@@ -1,6 +1,7 @@
 import {
   BadGatewayException,
   GatewayTimeoutException,
+  HttpException,
   Injectable,
   Logger,
   ServiceUnavailableException,
@@ -47,14 +48,19 @@ export class ChatbotService {
         signal: controller.signal,
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
         this.logger.error(`back2 /chat ${res.status}: ${JSON.stringify(data)}`);
-        throw new BadGatewayException('Chatbot backend returned an error');
+        // Relay back2's status + body so the caller sees the real reason
+        // (e.g. an upstream LLM/Groq error), not a generic message.
+        throw new HttpException(
+          data ?? { message: 'Chatbot backend returned an error' },
+          res.status,
+        );
       }
       return data; // { reply: "..." }
     } catch (err) {
-      if (err instanceof BadGatewayException) throw err;
+      if (err instanceof HttpException) throw err; // relay intentional errors as-is
       if (err instanceof Error && err.name === 'AbortError') {
         throw new GatewayTimeoutException('Chatbot took too long to respond');
       }
