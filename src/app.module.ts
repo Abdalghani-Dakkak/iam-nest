@@ -13,6 +13,7 @@ import { PermissionRequestsModule } from './permission-requests/permission-reque
 import { PermissionGroupsModule } from './permission-groups/permission-groups.module';
 import { ContractorsModule } from './contractors/contractors.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
+import { SeedModule } from './seed/seed.module';
 import { AuthModule } from './auth/auth.module';
 
 import { Permission } from './permissions/entities/permission.entity';
@@ -59,6 +60,7 @@ import { Contractor } from './contractors/entities/contractor.entity';
     PermissionGroupsModule,
     ContractorsModule,
     ChatbotModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
