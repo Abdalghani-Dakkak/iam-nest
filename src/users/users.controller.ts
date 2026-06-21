@@ -6,12 +6,14 @@ import {
   Patch,
   Param,
   ParseIntPipe,
+  Query,
   Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { GrantPermissionsDto } from './dto/grant-permissions.dto';
+import { QueryUsersDto } from './dto/query-users.dto';
 import { Public } from '../auth/public.decorator';
 
 @Controller('users')
@@ -25,8 +27,8 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query() query: QueryUsersDto) {
+    return this.usersService.findAll(query);
   }
 
   @Get(':id')

@@ -5,13 +5,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { QueryUsersDto } from './dto/query-users.dto';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -37,8 +38,18 @@ export class UsersService {
     return this.findOne(saved.id);
   }
 
-  findAll(): Promise<User[]> {
-    return this.usersRepository.find({ relations: { role: true } });
+  findAll(query: QueryUsersDto = {}): Promise<User[]> {
+    const where: FindOptionsWhere<User> = {};
+    if (query.department !== undefined) {
+      where.department = query.department;
+    }
+    if (query.roleId !== undefined) {
+      where.role = { id: query.roleId };
+    }
+    if (query.isActive !== undefined) {
+      where.isActive = query.isActive;
+    }
+    return this.usersRepository.find({ where, relations: { role: true } });
   }
 
   async findOne(id: number): Promise<User> {
