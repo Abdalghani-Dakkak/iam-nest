@@ -1,5 +1,9 @@
 import {
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
+  OnGatewayDisconnect,
+  SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
@@ -19,17 +23,30 @@ const allowedOrigins = (
   process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : defaultOrigins
 ).map((o) => o.trim());
 
+// Same filters supported by GET /logs, but applied live per connected client.
+interface LogFilter {
+  userId?: number;
+  procedureType?: string;
+  state?: string;
+  department?: string;
+}
+
 /**
- * Real-time log stream. Clients connect to the `/logs` namespace with a JWT
- * (the same access token used for REST). Every log written via LogsService is
- * broadcast as a `log:new` event.
+ * Real-time log stream on the `/logs` namespace. Clients connect with a JWT
+ * (same access token as REST). A new log is pushed as a `log:new` event only
+ * to clients whose filter matches it — so a dashboard can stream just one
+ * user's logs, only failures, etc. No filter ⇒ receive everything.
+ *
+ * Set a filter either in the handshake (`auth: { filter: {...} }`) or live via
+ * the `subscribe` event; clear it with `unsubscribe`.
  */
 @WebSocketGateway({
   namespace: '/logs',
   cors: { origin: allowedOrigins, credentials: true },
 })
-export class LogsGateway implements OnGatewayConnection {
+export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(LogsGateway.name);
+  private readonly clients = new Map<string, Socket>();
 
   @WebSocketServer()
   server!: Server;
@@ -48,17 +65,80 @@ export class LogsGateway implements OnGatewayConnection {
         secret: jwtConstants.secret,
       });
       client.data.user = payload;
-      client.emit('connected', { message: 'Subscribed to logs' });
+      client.data.filter = this.normalizeFilter(client.handshake.auth?.filter);
+      this.clients.set(client.id, client);
+      client.emit('connected', {
+        message: 'Subscribed to logs',
+        filter: client.data.filter ?? null,
+      });
     } catch {
       client.emit('unauthorized', { message: 'Invalid or expired token' });
       client.disconnect();
     }
   }
 
-  /** Broadcast a newly-created log to all connected clients. */
+  handleDisconnect(client: Socket): void {
+    this.clients.delete(client.id);
+  }
+
+  /** Set/replace this client's live filter. */
+  @SubscribeMessage('subscribe')
+  handleSubscribe(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() filter: unknown,
+  ): void {
+    client.data.filter = this.normalizeFilter(filter);
+    client.emit('subscribed', { filter: client.data.filter ?? null });
+  }
+
+  /** Clear the filter — receive all logs again. */
+  @SubscribeMessage('unsubscribe')
+  handleUnsubscribe(@ConnectedSocket() client: Socket): void {
+    client.data.filter = undefined;
+    client.emit('subscribed', { filter: null });
+  }
+
+  /** Push a newly-created log to every client whose filter matches it. */
   emitLog(log: Log): void {
-    if (!this.server) return;
-    this.server.emit('log:new', log);
+    for (const socket of this.clients.values()) {
+      if (this.matchesFilter(log, socket.data.filter as LogFilter | undefined)) {
+        socket.emit('log:new', log);
+      }
+    }
+  }
+
+  private matchesFilter(log: Log, filter?: LogFilter): boolean {
+    if (!filter) return true;
+    const logUserId = log.user?.id ?? log.userId ?? null;
+    if (filter.userId !== undefined && logUserId !== filter.userId) return false;
+    if (
+      filter.procedureType !== undefined &&
+      log.procedureType !== filter.procedureType
+    ) {
+      return false;
+    }
+    if (filter.state !== undefined && log.state !== filter.state) return false;
+    if (
+      filter.department !== undefined &&
+      (log.department ?? null) !== filter.department
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  private normalizeFilter(raw: unknown): LogFilter | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const r = raw as Record<string, unknown>;
+    const f: LogFilter = {};
+    if (r.userId !== undefined && r.userId !== null && r.userId !== '') {
+      const n = Number(r.userId);
+      if (!Number.isNaN(n)) f.userId = n;
+    }
+    if (typeof r.procedureType === 'string') f.procedureType = r.procedureType;
+    if (typeof r.state === 'string') f.state = r.state;
+    if (typeof r.department === 'string') f.department = r.department;
+    return Object.keys(f).length ? f : undefined;
   }
 
   private extractToken(client: Socket): string | undefined {
