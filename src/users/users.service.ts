@@ -5,10 +5,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
+import { Permission } from '../permissions/entities/permission.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -21,6 +22,8 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly rolesRepository: Repository<Role>,
+    @InjectRepository(Permission)
+    private readonly permissionsRepository: Repository<Permission>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -113,6 +116,54 @@ export class UsersService {
     const user = await this.findOne(id);
     await this.usersRepository.remove(user);
     return { deleted: true, id };
+  }
+
+  // Admin grants permissions directly to a user (no request needed).
+  // Additive: already-held permissions are left untouched.
+  async grantPermissions(id: number, permissionIds: number[]): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: { directPermissions: true },
+    });
+    if (!user) {
+      throw new NotFoundException(`User #${id} not found`);
+    }
+
+    const permissions = await this.permissionsRepository.findBy({
+      id: In(permissionIds),
+    });
+    if (permissions.length !== permissionIds.length) {
+      const found = new Set(permissions.map((p) => p.id));
+      const missing = permissionIds.filter((pid) => !found.has(pid));
+      throw new NotFoundException(
+        `Permission(s) not found: ${missing.join(', ')}`,
+      );
+    }
+
+    const held = new Set(user.directPermissions.map((p) => p.id));
+    for (const permission of permissions) {
+      if (!held.has(permission.id)) {
+        user.directPermissions.push(permission);
+      }
+    }
+    await this.usersRepository.save(user);
+    return this.findWithPermissions(id);
+  }
+
+  // Admin revokes a single direct permission from a user.
+  async revokePermission(id: number, permissionId: number): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: { directPermissions: true },
+    });
+    if (!user) {
+      throw new NotFoundException(`User #${id} not found`);
+    }
+    user.directPermissions = user.directPermissions.filter(
+      (p) => p.id !== permissionId,
+    );
+    await this.usersRepository.save(user);
+    return this.findWithPermissions(id);
   }
 
   private async assertEmailAvailable(email: string): Promise<void> {
