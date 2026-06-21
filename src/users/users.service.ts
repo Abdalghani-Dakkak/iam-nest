@@ -63,6 +63,29 @@ export class UsersService {
     return user;
   }
 
+  // Returns a user's permissions broken down by source plus the merged
+  // effective set (what the user can actually do).
+  async getUserPermissions(id: number): Promise<{
+    rolePermissions: Permission[];
+    directPermissions: Permission[];
+    effective: Permission[];
+  }> {
+    const user = await this.findWithPermissions(id);
+    const rolePermissions = user.role?.permissions ?? [];
+    const directPermissions = user.directPermissions ?? [];
+
+    const byId = new Map<number, Permission>();
+    for (const permission of rolePermissions) byId.set(permission.id, permission);
+    for (const permission of directPermissions)
+      byId.set(permission.id, permission);
+
+    return {
+      rolePermissions,
+      directPermissions,
+      effective: [...byId.values()],
+    };
+  }
+
   findByEmailWithPassword(email: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
