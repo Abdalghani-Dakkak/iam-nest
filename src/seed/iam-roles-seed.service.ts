@@ -42,28 +42,11 @@ interface RoleDef {
   permissions: string[];
 }
 
-// Default role -> permission matrix (from ROLES_AND_PERMISSIONS.md).
+// Only security_officer is seeded as a government role now (the other roles
+// were removed per request — keeping only complaints.admin, admin, and
+// security_officer). The permission catalog above is still seeded in full so
+// it remains available to assign.
 const ROLES: RoleDef[] = [
-  {
-    name: 'system_owner',
-    arabicName: 'مالك النظام',
-    description: 'Full superuser — has * permission, bypasses all checks',
-    isSystem: true,
-    permissions: ['*'],
-  },
-  {
-    name: 'it_admin',
-    arabicName: 'مسؤول تقنية المعلومات',
-    description: 'Manages users, roles, system settings',
-    permissions: [
-      'users:view', 'users:create', 'users:edit', 'users:suspend',
-      'users:delete', 'users:export', 'roles:view', 'roles:edit',
-      'permissions:grant', 'permissions:revoke', 'orgs:view', 'orgs:manage',
-      'workflows:view', 'workflows:approve', 'workflows:reject',
-      'contractors:view', 'contractors:manage', 'contractors:extend',
-      'self:update_profile', 'settings:view', 'settings:manage',
-    ],
-  },
   {
     name: 'security_officer',
     arabicName: 'مسؤول الأمن السيبراني',
@@ -71,54 +54,6 @@ const ROLES: RoleDef[] = [
     permissions: [
       'roles:view', 'roles:edit', 'permissions:grant', 'permissions:revoke',
       'audit:view', 'audit:export', 'self:update_profile',
-    ],
-  },
-  {
-    name: 'internal_auditor',
-    arabicName: 'المدقق الداخلي',
-    description: 'Read-only audit log access',
-    permissions: ['audit:view', 'audit:export', 'self:update_profile'],
-  },
-  {
-    name: 'senior_manager',
-    arabicName: 'المدير الأعلى',
-    description: 'Approves workflows, views users and org',
-    permissions: [
-      'users:view', 'orgs:view', 'workflows:view', 'workflows:approve',
-      'workflows:reject', 'self:request_access', 'self:update_profile',
-    ],
-  },
-  {
-    name: 'department_manager',
-    arabicName: 'مدير القسم',
-    description: 'Approves workflows, views org, self-service',
-    permissions: [
-      'orgs:view', 'workflows:view', 'workflows:approve', 'workflows:reject',
-      'self:request_access', 'self:update_profile',
-    ],
-  },
-  {
-    name: 'hr_employee',
-    arabicName: 'موظف الموارد البشرية',
-    description: 'Manages users and contractors',
-    permissions: [
-      'users:view', 'users:create', 'users:edit', 'users:export', 'orgs:view',
-      'contractors:view', 'contractors:manage', 'contractors:extend',
-      'self:request_access', 'self:update_profile',
-    ],
-  },
-  {
-    name: 'regular_employee',
-    arabicName: 'موظف عادي',
-    description: 'Self-service only',
-    permissions: ['self:request_access', 'self:update_profile'],
-  },
-  {
-    name: 'contractor',
-    arabicName: 'متعاقد مؤقت',
-    description: 'Self-service + contract extension only',
-    permissions: [
-      'self:request_access', 'self:request_extension', 'self:update_profile',
     ],
   },
 ];
