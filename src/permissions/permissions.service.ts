@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Permission } from './entities/permission.entity';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
@@ -22,8 +22,10 @@ export class PermissionsService {
     return this.permissionsRepository.save(permission);
   }
 
-  findAll(): Promise<Permission[]> {
-    return this.permissionsRepository.find();
+  findAll(scope?: string | null): Promise<Permission[]> {
+    return this.permissionsRepository.find({
+      where: scope ? { name: Like(`${scope}%`) } : {},
+    });
   }
 
   async findOne(id: number): Promise<Permission> {

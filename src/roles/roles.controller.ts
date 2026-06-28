@@ -6,10 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import type { JwtPayload } from '../auth/jwt-auth.guard';
+import { roleScope } from '../auth/role-scope.util';
 
 @Controller('roles')
 export class RolesController {
@@ -20,9 +24,10 @@ export class RolesController {
     return this.rolesService.create(createRoleDto);
   }
 
+  // A system-scoped caller (e.g. complaints.admin) sees only its own roles.
   @Get()
-  findAll() {
-    return this.rolesService.findAll();
+  findAll(@Req() req: Request & { user: JwtPayload }) {
+    return this.rolesService.findAll(roleScope(req.user));
   }
 
   @Get(':id')

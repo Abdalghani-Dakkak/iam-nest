@@ -6,10 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
+import type { JwtPayload } from '../auth/jwt-auth.guard';
+import { roleScope } from '../auth/role-scope.util';
 
 @Controller('permissions')
 export class PermissionsController {
@@ -20,9 +24,10 @@ export class PermissionsController {
     return this.permissionsService.create(createPermissionDto);
   }
 
+  // A system-scoped caller (e.g. complaints.admin) sees only its own permissions.
   @Get()
-  findAll() {
-    return this.permissionsService.findAll();
+  findAll(@Req() req: Request & { user: JwtPayload }) {
+    return this.permissionsService.findAll(roleScope(req.user));
   }
 
   @Get(':id')

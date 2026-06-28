@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import { Role } from './entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -29,8 +29,11 @@ export class RolesService {
     return this.rolesRepository.save(role);
   }
 
-  findAll(): Promise<Role[]> {
-    return this.rolesRepository.find({ relations: { permissions: true } });
+  findAll(scope?: string | null): Promise<Role[]> {
+    return this.rolesRepository.find({
+      where: scope ? { name: Like(`${scope}%`) } : {},
+      relations: { permissions: true },
+    });
   }
 
   async findOne(id: number): Promise<Role> {
