@@ -55,7 +55,10 @@ export class UsersService {
     return this.findOne(saved.id);
   }
 
-  findAll(query: QueryUsersDto = {}): Promise<User[]> {
+  findAll(
+    query: QueryUsersDto = {},
+    systemId?: number | null,
+  ): Promise<User[]> {
     const where: FindOptionsWhere<User> = {};
     if (query.institutionId !== undefined)
       where.institution = { id: query.institutionId };
@@ -63,8 +66,15 @@ export class UsersService {
       where.department = { id: query.departmentId };
     if (query.unitId !== undefined)
       where.unit = { id: query.unitId };
-    if (query.roleId !== undefined) where.role = { id: query.roleId };
     if (query.isActive !== undefined) where.isActive = query.isActive;
+
+    // Scope by the caller's system: only show users whose role belongs to
+    // the same system. IAM-native callers (no systemId) see everyone.
+    const roleFilter: FindOptionsWhere<User['role']> = {};
+    if (systemId != null) roleFilter.system = { id: systemId };
+    if (query.roleId !== undefined) roleFilter.id = query.roleId;
+    if (Object.keys(roleFilter).length) where.role = roleFilter;
+
     return this.usersRepository.find({
       where,
       relations: { role: true, institution: true, department: true, unit: true },

@@ -8,13 +8,16 @@ import {
   ParseIntPipe,
   Query,
   Delete,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { GrantPermissionsDto } from './dto/grant-permissions.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { Public } from '../auth/public.decorator';
+import type { JwtPayload } from '../auth/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -27,8 +30,11 @@ export class UsersController {
   }
 
   @Get()
-  findAll(@Query() query: QueryUsersDto) {
-    return this.usersService.findAll(query);
+  findAll(
+    @Query() query: QueryUsersDto,
+    @Req() req: Request & { user: JwtPayload },
+  ) {
+    return this.usersService.findAll(query, req.user.systemId);
   }
 
   @Get(':id')
