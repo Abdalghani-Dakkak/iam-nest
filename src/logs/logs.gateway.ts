@@ -31,6 +31,12 @@ interface LogFilter {
   department?: string;
 }
 
+// Shape of the socket.io handshake auth object we expect from clients.
+interface HandshakeAuth {
+  token?: string;
+  filter?: unknown;
+}
+
 /**
  * Real-time log stream on the `/logs` namespace. Clients connect with a JWT
  * (same access token as REST). A new log is pushed as a `log:new` event only
@@ -47,6 +53,8 @@ interface LogFilter {
 export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(LogsGateway.name);
   private readonly clients = new Map<string, Socket>();
+  // Per-client filter stored separately to avoid socket.data's `any` type.
+  private readonly clientFilters = new Map<string, LogFilter>();
 
   @WebSocketServer()
   server!: Server;
@@ -61,15 +69,16 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+      await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: jwtConstants.secret,
       });
-      client.data.user = payload;
-      client.data.filter = this.normalizeFilter(client.handshake.auth?.filter);
+      const auth = client.handshake.auth as HandshakeAuth;
+      const filter = this.normalizeFilter(auth.filter);
+      if (filter) this.clientFilters.set(client.id, filter);
       this.clients.set(client.id, client);
       client.emit('connected', {
         message: 'Subscribed to logs',
-        filter: client.data.filter ?? null,
+        filter: filter ?? null,
       });
     } catch {
       client.emit('unauthorized', { message: 'Invalid or expired token' });
@@ -79,6 +88,7 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket): void {
     this.clients.delete(client.id);
+    this.clientFilters.delete(client.id);
   }
 
   /** Set/replace this client's live filter. */
@@ -87,23 +97,26 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() filter: unknown,
   ): void {
-    client.data.filter = this.normalizeFilter(filter);
-    client.emit('subscribed', { filter: client.data.filter ?? null });
+    const f = this.normalizeFilter(filter);
+    if (f) {
+      this.clientFilters.set(client.id, f);
+    } else {
+      this.clientFilters.delete(client.id);
+    }
+    client.emit('subscribed', { filter: f ?? null });
   }
 
   /** Clear the filter — receive all logs again. */
   @SubscribeMessage('unsubscribe')
   handleUnsubscribe(@ConnectedSocket() client: Socket): void {
-    client.data.filter = undefined;
+    this.clientFilters.delete(client.id);
     client.emit('subscribed', { filter: null });
   }
 
   /** Push a newly-created log to every client whose filter matches it. */
   emitLog(log: Log): void {
-    for (const socket of this.clients.values()) {
-      if (
-        this.matchesFilter(log, socket.data.filter as LogFilter | undefined)
-      ) {
+    for (const [id, socket] of this.clients) {
+      if (this.matchesFilter(log, this.clientFilters.get(id))) {
         socket.emit('log:new', log);
       }
     }
@@ -114,19 +127,18 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const logUserId = log.user?.id ?? log.userId ?? null;
     if (filter.userId !== undefined && logUserId !== filter.userId)
       return false;
+
     if (
       filter.procedureType !== undefined &&
       log.procedureType !== filter.procedureType
-    ) {
+    )
       return false;
-    }
     if (filter.state !== undefined && log.state !== filter.state) return false;
     if (
       filter.department !== undefined &&
       (log.department ?? null) !== filter.department
-    ) {
+    )
       return false;
-    }
     return true;
   }
 
@@ -145,7 +157,8 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private extractToken(client: Socket): string | undefined {
-    const fromAuth = client.handshake.auth?.token as string | undefined;
+    const auth = client.handshake.auth as HandshakeAuth;
+    const fromAuth = auth.token;
     if (fromAuth) return fromAuth.replace(/^Bearer\s+/i, '');
     const header = client.handshake.headers?.authorization;
     return header?.startsWith('Bearer ') ? header.slice(7) : undefined;
