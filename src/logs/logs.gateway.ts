@@ -25,6 +25,7 @@ const allowedOrigins = (
 
 interface LogFilter {
   userId?: number;
+  systemId?: number;
   procedureType?: string;
   state?: string;
   department?: string;
@@ -110,8 +111,9 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private matchesFilter(log: Log, filter?: LogFilter): boolean {
     if (!filter) return true;
     const logUserId = log.user?.id ?? log.userId ?? null;
-    if (filter.userId !== undefined && logUserId !== filter.userId)
-      return false;
+    if (filter.userId !== undefined && logUserId !== filter.userId) return false;
+    const logSystemId = log.system?.id ?? log.systemId ?? null;
+    if (filter.systemId !== undefined && logSystemId !== filter.systemId) return false;
 
     if (
       filter.procedureType !== undefined &&
@@ -134,6 +136,10 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (r.userId !== undefined && r.userId !== null && r.userId !== '') {
       const n = Number(r.userId);
       if (!Number.isNaN(n)) f.userId = n;
+    }
+    if (r.systemId !== undefined && r.systemId !== null && r.systemId !== '') {
+      const n = Number(r.systemId);
+      if (!Number.isNaN(n)) f.systemId = n;
     }
     if (typeof r.procedureType === 'string') f.procedureType = r.procedureType;
     if (typeof r.state === 'string') f.state = r.state;

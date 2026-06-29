@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Log } from './entities/log.entity';
 import { User } from '../users/entities/user.entity';
+import { System } from '../systems/entities/system.entity';
 import { CreateLogDto } from './dto/create-log.dto';
 import { QueryLogsDto } from './dto/query-logs.dto';
 import { LogsGateway } from './logs.gateway';
@@ -20,14 +21,20 @@ export class LogsService {
     private readonly logsRepository: Repository<Log>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @InjectRepository(System)
+    private readonly systemsRepository: Repository<System>,
     private readonly logsGateway: LogsGateway,
   ) {}
 
   async create(createLogDto: CreateLogDto): Promise<Log> {
-    const { userId, ...data } = createLogDto;
+    const { userId, systemId, ...data } = createLogDto;
     const log = this.logsRepository.create(data);
     if (userId !== undefined) {
       log.user = await this.resolveUser(userId);
+    }
+    if (systemId !== undefined) {
+      const system = await this.systemsRepository.findOne({ where: { id: systemId } });
+      log.system = system ?? null;
     }
     const saved = await this.logsRepository.save(log);
     this.logsGateway.emitLog(saved);
@@ -49,6 +56,9 @@ export class LogsService {
     if (query.department !== undefined) {
       where.department = query.department;
     }
+    if (query.systemId !== undefined) {
+      where.system = { id: query.systemId };
+    }
 
     const dateRange = this.buildDateRange(query.startDate, query.endDate);
     if (dateRange) {
@@ -57,7 +67,7 @@ export class LogsService {
 
     return this.logsRepository.find({
       where,
-      relations: { user: true },
+      relations: { user: true, system: true },
       order: { createdAt: 'DESC' },
     });
   }
@@ -65,7 +75,7 @@ export class LogsService {
   async findOne(id: number): Promise<Log> {
     const log = await this.logsRepository.findOne({
       where: { id },
-      relations: { user: true },
+      relations: { user: true, system: true },
     });
     if (!log) {
       throw new NotFoundException(`Log #${id} not found`);

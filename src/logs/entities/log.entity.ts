@@ -8,6 +8,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { System } from '../../systems/entities/system.entity';
 
 export type LogState = 'success' | 'failure';
 
@@ -16,15 +17,19 @@ export class Log {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => User, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })
   user!: User | null;
 
   @RelationId((log: Log) => log.user)
   userId!: number | null;
+
+  @ManyToOne(() => System, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'system_id' })
+  system!: System | null;
+
+  @RelationId((log: Log) => log.system)
+  systemId!: number | null;
 
   @Column({ type: 'varchar', length: 100 })
   procedureType!: string;

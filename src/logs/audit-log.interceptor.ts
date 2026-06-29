@@ -29,6 +29,7 @@ export class AuditLogInterceptor implements NestInterceptor {
     const xff = req.headers?.['x-forwarded-for'] as string | undefined;
     const base = {
       userId: req.user?.sub as number | undefined,
+      systemId: req.user?.systemId as number | undefined,
       procedureType: `${method} ${path}`.slice(0, 100),
       ipAddress: (xff?.split(',')[0]?.trim() || req.ip || undefined)?.slice(
         0,

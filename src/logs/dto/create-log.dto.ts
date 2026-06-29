@@ -12,6 +12,10 @@ export class CreateLogDto {
   @IsInt()
   userId?: number;
 
+  @IsOptional()
+  @IsInt()
+  systemId?: number;
+
   @IsString()
   @MaxLength(100)
   procedureType!: string;

@@ -23,6 +23,11 @@ export class QueryLogsDto {
   userId?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  systemId?: number;
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   procedureType?: string;

@@ -7,9 +7,10 @@ import { LogsGateway } from './logs.gateway';
 import { AuditLogInterceptor } from './audit-log.interceptor';
 import { Log } from './entities/log.entity';
 import { User } from '../users/entities/user.entity';
+import { System } from '../systems/entities/system.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Log, User])],
+  imports: [TypeOrmModule.forFeature([Log, User, System])],
   controllers: [LogsController],
   providers: [
     LogsService,
