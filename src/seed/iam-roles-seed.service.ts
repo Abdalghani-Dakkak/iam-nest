@@ -5,7 +5,6 @@ import { Permission } from '../permissions/entities/permission.entity';
 import { Role } from '../roles/entities/role.entity';
 import { System } from '../systems/entities/system.entity';
 
-// [name, arabic label] — must match the frontend's exact permission strings.
 const PERMISSIONS: Array<[string, string]> = [
   ['users:view', 'عرض المستخدمين'],
   ['users:create', 'إنشاء مستخدم'],
@@ -43,10 +42,6 @@ interface RoleDef {
   permissions: string[];
 }
 
-// Only security_officer is seeded as a government role now (the other roles
-// were removed per request — keeping only complaints.admin, admin, and
-// security_officer). The permission catalog above is still seeded in full so
-// it remains available to assign.
 const ROLES: RoleDef[] = [
   {
     name: 'security_officer',
@@ -64,11 +59,6 @@ const ROLES: RoleDef[] = [
   },
 ];
 
-/**
- * Seeds the government roles & permissions on boot (idempotent). Creates any
- * missing permission and any missing role (with its default matrix). Existing
- * roles are left untouched so admin edits via the UI are never overwritten.
- */
 @Injectable()
 export class IamRolesSeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(IamRolesSeedService.name);
@@ -94,7 +84,6 @@ export class IamRolesSeedService implements OnApplicationBootstrap {
   }
 
   private async seed(): Promise<void> {
-    // 1. Ensure every permission exists.
     const byName = new Map<string, Permission>();
     let createdPerms = 0;
     for (const [name, label] of PERMISSIONS) {
@@ -109,8 +98,6 @@ export class IamRolesSeedService implements OnApplicationBootstrap {
     }
     if (createdPerms) this.logger.log(`Created ${createdPerms} permission(s)`);
 
-    // 2. Ensure every role exists (with its default matrix). Don't touch
-    //    roles that already exist — admins may have customized them.
     let createdRoles = 0;
     for (const def of ROLES) {
       const existing = await this.roles.findOne({ where: { name: def.name } });
@@ -132,8 +119,6 @@ export class IamRolesSeedService implements OnApplicationBootstrap {
     }
     if (!createdRoles) this.logger.log('IAM roles already present');
 
-    // 3. Ensure the three protected roles always have isSystem: true,
-    //    even if they were created before this flag was enforced.
     const SYSTEM_ROLE_NAMES = ['admin', 'security_officer', 'complaints.admin'];
     const { affected } = await this.roles.update(
       { name: In(SYSTEM_ROLE_NAMES), isSystem: false },
@@ -141,7 +126,6 @@ export class IamRolesSeedService implements OnApplicationBootstrap {
     );
     if (affected) this.logger.log(`Marked ${affected} role(s) as isSystem=true`);
 
-    // 3. Ensure the "complaints" system exists and link all complaints.* roles.
     let complaintsSystem = await this.systems.findOne({
       where: { name: 'complaints' },
     });
@@ -156,9 +140,6 @@ export class IamRolesSeedService implements OnApplicationBootstrap {
       this.logger.log('Created system: complaints');
     }
 
-    // Link any complaints.* roles that aren't linked yet.
-    // TypeORM can't query "IS NULL" via find shorthand for relations, so filter
-    // client-side after fetching with relation loaded.
     const complaintsRoles = await this.roles.find({
       where: { name: Like('complaints.%') },
       relations: { system: true },

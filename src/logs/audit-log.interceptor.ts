@@ -7,20 +7,6 @@ import {
 import { Observable, catchError, tap, throwError } from 'rxjs';
 import { LogsService } from './logs.service';
 
-/**
- * Writes an audit log for every IAM request via LogsService.create, capturing
- * the acting user, route, IP, user-agent, HTTP status and success/failure.
- *
- * Skips:
- *  - the public health check (GET /),
- *  - POST /auth/login (AuthService already writes a richer login log),
- *  - the /logs endpoints themselves (so receiving an external log or viewing
- *    the audit page does not log itself / double-log).
- *
- * Set AUDIT_LOG_READS=false to skip GET requests (log only mutations).
- *
- * Fire-and-forget: a logging failure never affects the user's response.
- */
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
   constructor(private readonly logsService: LogsService) {}

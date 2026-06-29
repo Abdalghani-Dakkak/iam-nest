@@ -18,7 +18,6 @@ export class CreatePermissionRequestDto {
   @MaxLength(500)
   reason!: string;
 
-  // Validity window (YYYY-MM-DD). Omit for open-ended / permanent access.
   @IsOptional()
   @IsDateString()
   startDate?: string;

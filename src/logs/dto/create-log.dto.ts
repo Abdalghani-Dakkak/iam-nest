@@ -54,7 +54,6 @@ export class CreateLogDto {
   @IsInt()
   statusCode?: number;
 
-  // Any extra structured data to attach to the log.
   @IsOptional()
   @IsObject()
   metadata?: Record<string, any>;

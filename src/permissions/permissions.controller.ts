@@ -24,7 +24,6 @@ export class PermissionsController {
     return this.permissionsService.create(createPermissionDto);
   }
 
-  // A system-scoped caller (e.g. complaints.admin) sees only its own permissions.
   @Get()
   findAll(@Req() req: Request & { user: JwtPayload }) {
     return this.permissionsService.findAll(roleScope(req.user));

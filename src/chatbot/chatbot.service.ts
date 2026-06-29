@@ -12,16 +12,6 @@ import { ChatDto } from './dto/chat.dto';
 export class ChatbotService {
   private readonly logger = new Logger(ChatbotService.name);
 
-  /**
-   * Flow: front -> IAM (here) -> back2 -> chatbot.
-   * Forward { message, history } to back2's POST /chat, wait for its
-   * { reply } response, and relay it back to the frontend as-is.
-   *
-   * Config (env):
-   *   CHATBOT_API_URL    back2's chat endpoint, e.g. https://back2.example.com/chat (required)
-   *   CHATBOT_API_KEY    optional bearer token sent to back2
-   *   CHATBOT_TIMEOUT_MS how long to wait before giving up (default 30000)
-   */
   async chat(dto: ChatDto): Promise<unknown> {
     const url = process.env.CHATBOT_API_URL;
     if (!url) {
@@ -51,16 +41,14 @@ export class ChatbotService {
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         this.logger.error(`back2 /chat ${res.status}: ${JSON.stringify(data)}`);
-        // Relay back2's status + body so the caller sees the real reason
-        // (e.g. an upstream LLM/Groq error), not a generic message.
         throw new HttpException(
           data ?? { message: 'Chatbot backend returned an error' },
           res.status,
         );
       }
-      return data; // { reply: "..." }
+      return data;
     } catch (err) {
-      if (err instanceof HttpException) throw err; // relay intentional errors as-is
+      if (err instanceof HttpException) throw err;
       if (err instanceof Error && err.name === 'AbortError') {
         throw new GatewayTimeoutException('Chatbot took too long to respond');
       }

@@ -6,7 +6,6 @@ import { Role } from '../roles/entities/role.entity';
 
 const ROLE_NAME = 'complaints.admin';
 
-// Every permission the complaints system enforces.
 const COMPLAINTS_PERMISSIONS: Array<{
   name: string;
   label: string;
@@ -44,12 +43,6 @@ const COMPLAINTS_PERMISSIONS: Array<{
   },
 ];
 
-/**
- * Runs on every boot. Idempotently guarantees the complaints permissions exist
- * and stay attached to the `complaints.admin` role (marked isSystem). Additive:
- * it only creates what's missing and re-attaches dropped permissions — it never
- * removes anything — so the assignment is permanent / self-healing.
- */
 @Injectable()
 export class ComplaintsSeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(ComplaintsSeedService.name);
@@ -73,7 +66,6 @@ export class ComplaintsSeedService implements OnApplicationBootstrap {
   }
 
   private async seed(): Promise<void> {
-    // 1. Ensure every complaints permission exists (create the missing ones).
     const ensured: Permission[] = [];
     for (const def of COMPLAINTS_PERMISSIONS) {
       let permission = await this.permissions.findOne({
@@ -86,7 +78,6 @@ export class ComplaintsSeedService implements OnApplicationBootstrap {
       ensured.push(permission);
     }
 
-    // 2. Ensure the complaints.admin role exists (system role).
     let role = await this.roles.findOne({
       where: { name: ROLE_NAME },
       relations: { permissions: true },
@@ -108,8 +99,6 @@ export class ComplaintsSeedService implements OnApplicationBootstrap {
       return;
     }
 
-    // 3. Role exists — make sure it's a system role and that all complaints
-    //    permissions are attached (re-attach any that were removed). Additive.
     const attached = new Set((role.permissions ?? []).map((p) => p.id));
     const missing = ensured.filter((p) => !attached.has(p.id));
     let changed = false;

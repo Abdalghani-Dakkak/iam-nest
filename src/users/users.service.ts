@@ -68,8 +68,6 @@ export class UsersService {
       where.unit = { id: query.unitId };
     if (query.isActive !== undefined) where.isActive = query.isActive;
 
-    // Scope by the caller's system: only show users whose role belongs to
-    // the same system. IAM-native callers (no systemId) see everyone.
     const roleFilter: FindOptionsWhere<User['role']> = {};
     if (systemId != null) roleFilter.system = { id: systemId };
     if (query.roleId !== undefined) roleFilter.id = query.roleId;
@@ -245,9 +243,6 @@ export class UsersService {
     return inst;
   }
 
-  // Validates that a system-scoped role (role.system.institutionId != null) is
-  // only assigned to a user whose institution matches. IAM-native roles (no
-  // system) are unrestricted.
   private async resolveRole(
     id: number,
     userInstitutionId: number | null,

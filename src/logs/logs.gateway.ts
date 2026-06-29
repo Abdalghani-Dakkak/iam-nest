@@ -23,7 +23,6 @@ const allowedOrigins = (
   process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : defaultOrigins
 ).map((o) => o.trim());
 
-// Same filters supported by GET /logs, but applied live per connected client.
 interface LogFilter {
   userId?: number;
   procedureType?: string;
@@ -31,21 +30,11 @@ interface LogFilter {
   department?: string;
 }
 
-// Shape of the socket.io handshake auth object we expect from clients.
 interface HandshakeAuth {
   token?: string;
   filter?: unknown;
 }
 
-/**
- * Real-time log stream on the `/logs` namespace. Clients connect with a JWT
- * (same access token as REST). A new log is pushed as a `log:new` event only
- * to clients whose filter matches it — so a dashboard can stream just one
- * user's logs, only failures, etc. No filter ⇒ receive everything.
- *
- * Set a filter either in the handshake (`auth: { filter: {...} }`) or live via
- * the `subscribe` event; clear it with `unsubscribe`.
- */
 @WebSocketGateway({
   namespace: '/logs',
   cors: { origin: allowedOrigins, credentials: true },
@@ -53,7 +42,6 @@ interface HandshakeAuth {
 export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(LogsGateway.name);
   private readonly clients = new Map<string, Socket>();
-  // Per-client filter stored separately to avoid socket.data's `any` type.
   private readonly clientFilters = new Map<string, LogFilter>();
 
   @WebSocketServer()
@@ -91,7 +79,6 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.clientFilters.delete(client.id);
   }
 
-  /** Set/replace this client's live filter. */
   @SubscribeMessage('subscribe')
   handleSubscribe(
     @ConnectedSocket() client: Socket,
@@ -106,14 +93,12 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('subscribed', { filter: f ?? null });
   }
 
-  /** Clear the filter — receive all logs again. */
   @SubscribeMessage('unsubscribe')
   handleUnsubscribe(@ConnectedSocket() client: Socket): void {
     this.clientFilters.delete(client.id);
     client.emit('subscribed', { filter: null });
   }
 
-  /** Push a newly-created log to every client whose filter matches it. */
   emitLog(log: Log): void {
     for (const [id, socket] of this.clients) {
       if (this.matchesFilter(log, this.clientFilters.get(id))) {

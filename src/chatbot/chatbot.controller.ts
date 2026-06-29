@@ -7,7 +7,6 @@ import { Public } from '../auth/public.decorator';
 export class ChatbotController {
   constructor(private readonly chatbotService: ChatbotService) {}
 
-  // PUBLIC — front sends { message, history }; we relay back2's { reply }.
   @Post('ask')
   @Public()
   ask(@Body() dto: ChatDto) {

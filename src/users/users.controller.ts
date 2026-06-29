@@ -52,13 +52,11 @@ export class UsersController {
     return this.usersService.remove(+id);
   }
 
-  // Returns a user's permissions: role-derived, direct, and merged effective.
   @Get(':id/permissions')
   getUserPermissions(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.getUserPermissions(id);
   }
 
-  // Grant permissions directly to a user (admin action, no request needed).
   @Post(':id/permissions')
   grantPermissions(
     @Param('id', ParseIntPipe) id: number,
@@ -67,7 +65,6 @@ export class UsersController {
     return this.usersService.grantPermissions(id, dto.permissionIds);
   }
 
-  // Revoke a single direct permission from a user.
   @Delete(':id/permissions/:permId')
   revokePermission(
     @Param('id', ParseIntPipe) id: number,
