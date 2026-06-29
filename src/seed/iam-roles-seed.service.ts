@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Role } from '../roles/entities/role.entity';
 import { System } from '../systems/entities/system.entity';
@@ -131,6 +131,15 @@ export class IamRolesSeedService implements OnApplicationBootstrap {
       );
     }
     if (!createdRoles) this.logger.log('IAM roles already present');
+
+    // 3. Ensure the three protected roles always have isSystem: true,
+    //    even if they were created before this flag was enforced.
+    const SYSTEM_ROLE_NAMES = ['admin', 'security_officer', 'complaints.admin'];
+    const { affected } = await this.roles.update(
+      { name: In(SYSTEM_ROLE_NAMES), isSystem: false },
+      { isSystem: true },
+    );
+    if (affected) this.logger.log(`Marked ${affected} role(s) as isSystem=true`);
 
     // 3. Ensure the "complaints" system exists and link all complaints.* roles.
     let complaintsSystem = await this.systems.findOne({
