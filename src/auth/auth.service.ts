@@ -219,7 +219,7 @@ export class AuthService {
       id: number;
       email: string;
       username: string;
-      role?: { name: string } | null;
+      role?: { name: string; systemId?: number | null } | null;
     },
     sid: number,
     permissions: string[] = [],
@@ -231,6 +231,7 @@ export class AuthService {
       sid,
       permissions,
       roleName: user.role?.name,
+      systemId: user.role?.systemId ?? null,
     };
 
     const [access_token, refresh_token] = await Promise.all([

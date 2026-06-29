@@ -16,6 +16,7 @@ export interface JwtPayload {
   sid?: number;
   permissions?: string[];
   roleName?: string;
+  systemId?: number | null;
 }
 
 @Injectable()
