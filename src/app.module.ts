@@ -11,9 +11,8 @@ import { InstitutionsModule } from './institutions/institutions.module';
 import { LogsModule } from './logs/logs.module';
 import { PermissionRequestsModule } from './permission-requests/permission-requests.module';
 import { PermissionGroupsModule } from './permission-groups/permission-groups.module';
-import { ContractorsModule } from './contractors/contractors.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
-import { SeedModule } from './seed/seed.module';
+import { SeedModule } from './roles/seed.module';
 import { AuthModule } from './auth/auth.module';
 
 import { Permission } from './permissions/entities/permission.entity';
@@ -24,7 +23,6 @@ import { Log } from './logs/entities/log.entity';
 import { Session } from './auth/entities/session.entity';
 import { PermissionRequest } from './permission-requests/entities/permission-request.entity';
 import { PermissionGroup } from './permission-groups/entities/permission-group.entity';
-import { Contractor } from './contractors/entities/contractor.entity';
 
 @Module({
   imports: [
@@ -45,7 +43,6 @@ import { Contractor } from './contractors/entities/contractor.entity';
         Session,
         PermissionRequest,
         PermissionGroup,
-        Contractor,
       ],
 
       synchronize: true,
@@ -58,7 +55,6 @@ import { Contractor } from './contractors/entities/contractor.entity';
     LogsModule,
     PermissionRequestsModule,
     PermissionGroupsModule,
-    ContractorsModule,
     ChatbotModule,
     SeedModule,
   ],
