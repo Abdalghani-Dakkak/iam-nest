@@ -60,7 +60,8 @@ export class PermissionRequestsService {
       permission,
       system: dto.system,
       reason: dto.reason,
-      duration: dto.duration ?? 'permanent',
+      startDate: dto.startDate ?? null,
+      endDate: dto.endDate ?? null,
       status: 'pending',
     });
     const saved = await this.requestsRepository.save(request);

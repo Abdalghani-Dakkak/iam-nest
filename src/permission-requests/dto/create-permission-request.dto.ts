@@ -1,4 +1,10 @@
-import { IsInt, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreatePermissionRequestDto {
   @IsString()
@@ -12,8 +18,12 @@ export class CreatePermissionRequestDto {
   @MaxLength(500)
   reason!: string;
 
+  // Validity window (YYYY-MM-DD). Omit for open-ended / permanent access.
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  duration?: string;
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
 }

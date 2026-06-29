@@ -35,8 +35,11 @@ export class PermissionRequest {
   @Column({ type: 'varchar', length: 255 })
   system!: string;
 
-  @Column({ type: 'varchar', length: 100, default: 'permanent' })
-  duration!: string;
+  @Column({ type: 'date', nullable: true })
+  startDate!: string | null;
+
+  @Column({ type: 'date', nullable: true })
+  endDate!: string | null;
 
   @Column({
     type: 'enum',
