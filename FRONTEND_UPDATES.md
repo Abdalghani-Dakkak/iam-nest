@@ -50,7 +50,42 @@ A **system** is an external software application (e.g. complaints, HR) owned by 
 
 ---
 
-## 2. Institution Hierarchy
+## 2. Institution Children — Cascading Dropdowns
+
+When building the create-user form (institution → department → unit), use `GET /institutions/:id` and read the `children` array to populate the next dropdown.
+
+**Pattern:**
+
+```
+User selects مديرية (id: 2)
+  → GET /institutions/2
+  → use response.children  →  populate قسم dropdown
+
+User selects قسم (id: 5)
+  → GET /institutions/5
+  → use response.children  →  populate وحدة dropdown
+```
+
+**Response shape of GET /institutions/:id:**
+
+```json
+{
+  "id": 2,
+  "name": "مديرية الصحة",
+  "level": 2,
+  "parent": { "id": 1, "name": "محافظة حمص" },
+  "children": [
+    { "id": 5, "name": "قسم المعلوماتية", "level": 3 },
+    { "id": 6, "name": "قسم الإدارة", "level": 3 }
+  ]
+}
+```
+
+No extra endpoint needed — `children` is already included.
+
+---
+
+## 3. Institution Hierarchy
 
 The institution tree has a fixed structure:
 
@@ -68,7 +103,7 @@ The institution tree has a fixed structure:
 
 ---
 
-## 3. User — Restructured Org Fields
+## 4. User — Restructured Org Fields
 
 The old free-text `department` and `unit` string fields have been **removed**. They are now proper FK references to the institutions tree.
 
@@ -126,7 +161,7 @@ Pass `null` to clear any of these fields.
 
 ---
 
-## 4. Role — New Fields
+## 5. Role — New Fields
 
 ### systemId field
 
@@ -168,7 +203,7 @@ Roles with `isSystem: true` (`admin`, `security_officer`, `complaints.admin`) ar
 
 ---
 
-## 5. Role Assignment Validation — 400 on Institution Mismatch
+## 6. Role Assignment Validation — 400 on Institution Mismatch
 
 When assigning a role to a user (`POST /users` or `PATCH /users/:id` with `roleId`):
 
@@ -188,7 +223,7 @@ IAM-native roles (no system) have no institution restriction.
 
 ---
 
-## 6. Typical Setup Flow
+## 7. Typical Setup Flow
 
 ```
 1. Create institution nodes via POST /institutions (root → مديريات → أقسام → وحدات)
@@ -211,7 +246,7 @@ IAM-native roles (no system) have no institution restriction.
 
 ---
 
-## 7. Error Codes Summary
+## 8. Error Codes Summary
 
 | Status | Scenario |
 |--------|----------|
