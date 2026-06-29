@@ -1,4 +1,11 @@
-import { IsInt, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateLogDto {
   @IsOptional()
@@ -22,4 +29,33 @@ export class CreateLogDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(45)
+  ipAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  userAgent?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  method?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  path?: string;
+
+  @IsOptional()
+  @IsInt()
+  statusCode?: number;
+
+  // Any extra structured data to attach to the log.
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
 }

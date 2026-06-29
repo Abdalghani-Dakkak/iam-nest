@@ -45,12 +45,12 @@ export class AuthService {
 
     if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
       if (user) {
-        await this.recordLogin(user, 'failure', 'Invalid password');
+        await this.recordLogin(user, 'failure', 'Invalid password', meta);
       }
       throw new UnauthorizedException('Invalid email or password');
     }
     if (!user.isActive) {
-      await this.recordLogin(user, 'failure', 'Account is disabled');
+      await this.recordLogin(user, 'failure', 'Account is disabled', meta);
       throw new UnauthorizedException('Account is disabled');
     }
 
@@ -66,7 +66,7 @@ export class AuthService {
       session.id,
       permissionNames,
     );
-    await this.recordLogin(user, 'success', null);
+    await this.recordLogin(user, 'success', null, meta);
     return this.buildAuthResult(user, tokens);
   }
 
@@ -97,6 +97,7 @@ export class AuthService {
     user: User,
     state: 'success' | 'failure',
     description: string | null,
+    meta: SessionMeta = {},
   ): Promise<void> {
     try {
       await this.logsService.create({
@@ -105,6 +106,10 @@ export class AuthService {
         state,
         department: user.department ?? undefined,
         description: description ?? undefined,
+        ipAddress: meta.ipAddress ?? undefined,
+        userAgent: meta.userAgent ?? undefined,
+        method: 'POST',
+        path: '/auth/login',
       });
     } catch (err) {
       this.logger.error(

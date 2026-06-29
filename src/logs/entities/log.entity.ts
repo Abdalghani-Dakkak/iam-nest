@@ -38,6 +38,25 @@ export class Log {
   @Column({ type: 'varchar', nullable: true, length: 500 })
   description!: string | null;
 
+  @Column({ type: 'varchar', nullable: true, length: 45 })
+  ipAddress!: string | null;
+
+  @Column({ type: 'varchar', nullable: true, length: 512 })
+  userAgent!: string | null;
+
+  @Column({ type: 'varchar', nullable: true, length: 10 })
+  method!: string | null;
+
+  @Column({ type: 'varchar', nullable: true, length: 255 })
+  path!: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  statusCode!: number | null;
+
+  // Flexible bucket for any extra structured data per log entry.
+  @Column({ type: 'jsonb', nullable: true })
+  metadata!: Record<string, any> | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 }
