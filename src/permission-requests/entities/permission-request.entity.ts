@@ -35,11 +35,11 @@ export class PermissionRequest {
   @Column({ type: 'varchar', length: 255 })
   system!: string;
 
-  @Column({ type: 'date', nullable: true })
-  startDate!: string | null;
+  @Column({ type: 'timestamp', nullable: true })
+  startDate!: Date | null;
 
-  @Column({ type: 'date', nullable: true })
-  endDate!: string | null;
+  @Column({ type: 'timestamp', nullable: true })
+  endDate!: Date | null;
 
   @Column({
     type: 'enum',
