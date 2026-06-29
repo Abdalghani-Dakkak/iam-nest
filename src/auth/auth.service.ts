@@ -104,7 +104,7 @@ export class AuthService {
         userId: user.id,
         procedureType: LOGIN_PROCEDURE,
         state,
-        department: user.department ?? undefined,
+        department: user.institution?.name ?? undefined,
         description: description ?? undefined,
         ipAddress: meta.ipAddress ?? undefined,
         userAgent: meta.userAgent ?? undefined,

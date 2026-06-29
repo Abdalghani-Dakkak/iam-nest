@@ -1,6 +1,4 @@
 import {
-  ArrayUnique,
-  IsArray,
   IsBoolean,
   IsInt,
   IsOptional,
@@ -8,7 +6,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
-export class CreateRoleDto {
+export class CreateSystemDto {
   @IsString()
   @MaxLength(50)
   name!: string;
@@ -21,33 +19,13 @@ export class CreateRoleDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  label?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
   description?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  color?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  hasExpiry?: boolean;
 
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 
   @IsOptional()
-  @IsArray()
-  @ArrayUnique()
-  @IsInt({ each: true })
-  permissionIds?: number[];
-
-  @IsOptional()
   @IsInt()
-  systemId?: number;
+  institutionId?: number;
 }

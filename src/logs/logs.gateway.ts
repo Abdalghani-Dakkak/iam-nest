@@ -101,7 +101,9 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Push a newly-created log to every client whose filter matches it. */
   emitLog(log: Log): void {
     for (const socket of this.clients.values()) {
-      if (this.matchesFilter(log, socket.data.filter as LogFilter | undefined)) {
+      if (
+        this.matchesFilter(log, socket.data.filter as LogFilter | undefined)
+      ) {
         socket.emit('log:new', log);
       }
     }
@@ -110,7 +112,8 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private matchesFilter(log: Log, filter?: LogFilter): boolean {
     if (!filter) return true;
     const logUserId = log.user?.id ?? log.userId ?? null;
-    if (filter.userId !== undefined && logUserId !== filter.userId) return false;
+    if (filter.userId !== undefined && logUserId !== filter.userId)
+      return false;
     if (
       filter.procedureType !== undefined &&
       log.procedureType !== filter.procedureType

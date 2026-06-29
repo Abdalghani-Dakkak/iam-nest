@@ -35,16 +35,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  department?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  unit?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
   jobTitle?: string;
 
   @IsOptional()
@@ -72,4 +62,16 @@ export class CreateUserDto {
   @IsOptional()
   @IsInt()
   roleId?: number;
+
+  @IsOptional()
+  @IsInt()
+  institutionId?: number;
+
+  @IsOptional()
+  @IsInt()
+  departmentId?: number;
+
+  @IsOptional()
+  @IsInt()
+  unitId?: number;
 }

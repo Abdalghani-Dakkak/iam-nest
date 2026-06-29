@@ -1,8 +1,9 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Role } from '../roles/entities/role.entity';
+import { System } from '../systems/entities/system.entity';
 
 // [name, arabic label] — must match the frontend's exact permission strings.
 const PERMISSIONS: Array<[string, string]> = [
@@ -52,8 +53,13 @@ const ROLES: RoleDef[] = [
     arabicName: 'مسؤول الأمن السيبراني',
     description: 'Audit log access, role matrix editing',
     permissions: [
-      'roles:view', 'roles:edit', 'permissions:grant', 'permissions:revoke',
-      'audit:view', 'audit:export', 'self:update_profile',
+      'roles:view',
+      'roles:edit',
+      'permissions:grant',
+      'permissions:revoke',
+      'audit:view',
+      'audit:export',
+      'self:update_profile',
     ],
   },
 ];
@@ -72,6 +78,8 @@ export class IamRolesSeedService implements OnApplicationBootstrap {
     private readonly permissions: Repository<Permission>,
     @InjectRepository(Role)
     private readonly roles: Repository<Role>,
+    @InjectRepository(System)
+    private readonly systems: Repository<System>,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -123,5 +131,37 @@ export class IamRolesSeedService implements OnApplicationBootstrap {
       );
     }
     if (!createdRoles) this.logger.log('IAM roles already present');
+
+    // 3. Ensure the "complaints" system exists and link all complaints.* roles.
+    let complaintsSystem = await this.systems.findOne({
+      where: { name: 'complaints' },
+    });
+    if (!complaintsSystem) {
+      complaintsSystem = await this.systems.save(
+        this.systems.create({
+          name: 'complaints',
+          arabicName: 'نظام الشكاوى والطلبات',
+          description: 'External complaints & requests system',
+        }),
+      );
+      this.logger.log('Created system: complaints');
+    }
+
+    // Link any complaints.* roles that aren't linked yet.
+    // TypeORM can't query "IS NULL" via find shorthand for relations, so filter
+    // client-side after fetching with relation loaded.
+    const complaintsRoles = await this.roles.find({
+      where: { name: Like('complaints.%') },
+      relations: { system: true },
+    });
+    const toLink = complaintsRoles.filter((r) => r.system == null);
+    if (toLink.length) {
+      await this.roles.save(
+        toLink.map((r) => ({ ...r, system: complaintsSystem })),
+      );
+      this.logger.log(
+        `Linked ${toLink.length} complaints.* role(s) to system "complaints"`,
+      );
+    }
   }
 }

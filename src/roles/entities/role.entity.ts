@@ -3,13 +3,17 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   JoinTable,
+  JoinColumn,
+  RelationId,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Permission } from '../../permissions/entities/permission.entity';
 import { User } from '../../users/entities/user.entity';
+import { System } from '../../systems/entities/system.entity';
 
 @Entity('roles')
 export class Role {
@@ -61,6 +65,16 @@ export class Role {
     },
   })
   permissions!: Permission[];
+
+  @ManyToOne(() => System, (system) => system.roles, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'system_id' })
+  system!: System | null;
+
+  @RelationId((role: Role) => role.system)
+  systemId!: number | null;
 
   @OneToMany(() => User, (user) => user.role)
   users!: User[];

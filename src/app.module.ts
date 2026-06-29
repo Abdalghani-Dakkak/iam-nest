@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { InstitutionsModule } from './institutions/institutions.module';
+import { SystemsModule } from './systems/systems.module';
 import { LogsModule } from './logs/logs.module';
 import { PermissionRequestsModule } from './permission-requests/permission-requests.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
@@ -21,6 +22,7 @@ import { Institution } from './institutions/entities/institution.entity';
 import { Log } from './logs/entities/log.entity';
 import { Session } from './auth/entities/session.entity';
 import { PermissionRequest } from './permission-requests/entities/permission-request.entity';
+import { System } from './systems/entities/system.entity';
 
 @Module({
   imports: [
@@ -37,6 +39,7 @@ import { PermissionRequest } from './permission-requests/entities/permission-req
         Role,
         User,
         Institution,
+        System,
         Log,
         Session,
         PermissionRequest,
@@ -49,6 +52,7 @@ import { PermissionRequest } from './permission-requests/entities/permission-req
     RolesModule,
     PermissionsModule,
     InstitutionsModule,
+    SystemsModule,
     LogsModule,
     PermissionRequestsModule,
     ChatbotModule,

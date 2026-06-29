@@ -1,17 +1,27 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional } from 'class-validator';
 
 export class QueryUsersDto {
   @IsOptional()
-  @IsString()
-  department?: string;
+  @Type(() => Number)
+  @IsInt()
+  institutionId?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  departmentId?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  unitId?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   roleId?: number;
 
-  // ?isActive=true / ?isActive=false
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()

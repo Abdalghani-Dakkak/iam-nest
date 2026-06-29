@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
 import { Permission } from '../../permissions/entities/permission.entity';
+import { Institution } from '../../institutions/entities/institution.entity';
 
 @Entity('users')
 export class User {
@@ -32,12 +33,6 @@ export class User {
 
   @Column({ select: false })
   password!: string;
-
-  @Column({ type: 'varchar', nullable: true, length: 255 })
-  department!: string | null;
-
-  @Column({ type: 'varchar', nullable: true, length: 255 })
-  unit!: string | null;
 
   @Column({ type: 'varchar', nullable: true, length: 255 })
   jobTitle!: string | null;
@@ -75,6 +70,27 @@ export class User {
 
   @RelationId((user: User) => user.role)
   roleId!: number | null;
+
+  @ManyToOne(() => Institution, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'institution_id' })
+  institution!: Institution | null;
+
+  @RelationId((user: User) => user.institution)
+  institutionId!: number | null;
+
+  @ManyToOne(() => Institution, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'department_id' })
+  department!: Institution | null;
+
+  @RelationId((user: User) => user.department)
+  departmentId!: number | null;
+
+  @ManyToOne(() => Institution, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'unit_id' })
+  unit!: Institution | null;
+
+  @RelationId((user: User) => user.unit)
+  unitId!: number | null;
 
   @ManyToMany(() => Permission, { cascade: false })
   @JoinTable({
