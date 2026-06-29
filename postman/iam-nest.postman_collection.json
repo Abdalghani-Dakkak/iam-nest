@@ -1,0 +1,765 @@
+{
+  "info": {
+    "name": "iam-nest API",
+    "description": "CRUD for Permissions, Roles, Users, Institutions, Systems, and Logs — protected by JWT auth.\n\n**Start here:** run **Auth > Login** first. It saves both tokens into collection variables, and the whole collection sends `access_token` as a Bearer token automatically. Default credentials: `admin@example.com` / `password123`.\n\n**Tokens:** access token expires in 5 min. When requests return 401, run **Auth > Refresh Token**.\n\n**Institution hierarchy:** محافظة حمص (level 1, root) → مديريات (level 2) → أقسام (level 3) → وحدات (level 4). Users are linked to a مديرية (institutionId), a قسم (departmentId), and a وحدة (unitId). Systems are linked to a مديرية.\n\n**Systems:** an external software application (e.g. complaints) owned by a مديرية. Assigning a system-scoped role to a user whose institution differs from the system's institution returns 400.\n\n**isSystem roles** (admin, security_officer, complaints.admin) are protected: DELETE and rename return 403.\n\nEvery route requires a token EXCEPT: `POST /auth/login`, `POST /auth/refresh`, `POST /users`, `POST /chatbot/ask`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "loginEmail", "value": "admin@example.com", "type": "string" },
+    { "key": "loginPassword", "value": "password123", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "refresh_token", "value": "", "type": "string" },
+    { "key": "permissionId", "value": "", "type": "string" },
+    { "key": "roleId", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "institutionId", "value": "", "type": "string" },
+    { "key": "systemId", "value": "", "type": "string" },
+    { "key": "logId", "value": "", "type": "string" },
+    { "key": "sessionId", "value": "", "type": "string" },
+    { "key": "permissionRequestId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body && body.access_token) {",
+                  "  pm.collectionVariables.set('access_token', body.access_token);",
+                  "  console.log('Saved access_token');",
+                  "}",
+                  "if (body && body.refresh_token) {",
+                  "  pm.collectionVariables.set('refresh_token', body.refresh_token);",
+                  "  console.log('Saved refresh_token');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Public. Returns { access_token, refresh_token }. Test script stores both."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (body && body.access_token) pm.collectionVariables.set('access_token', body.access_token);",
+                  "if (body && body.refresh_token) pm.collectionVariables.set('refresh_token', body.refresh_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] },
+            "description": "Public. Exchanges refresh_token for a new pair. Run when requests return 401."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile (me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/profile", "host": ["{{baseUrl}}"], "path": ["auth", "profile"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Info",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"عبد الله الأحمد\",\n  \"email\": \"admin@example.com\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/profile", "host": ["{{baseUrl}}"], "path": ["auth", "profile"] },
+            "description": "Updates only fullName and/or email of the logged-in user."
+          },
+          "response": []
+        },
+        {
+          "name": "Change My Password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"old_password\": \"password123\",\n  \"new_password\": \"newPassword123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/password", "host": ["{{baseUrl}}"], "path": ["auth", "password"] }
+          },
+          "response": []
+        },
+        {
+          "name": "My Login Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/login-logs", "host": ["{{baseUrl}}"], "path": ["auth", "login-logs"] }
+          },
+          "response": []
+        },
+        {
+          "name": "My Permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/permissions", "host": ["{{baseUrl}}"], "path": ["auth", "permissions"] }
+          },
+          "response": []
+        },
+        {
+          "name": "My Active Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "if (Array.isArray(body) && body.length) {",
+                  "  const other = body.find(s => !s.current) || body[0];",
+                  "  pm.collectionVariables.set('sessionId', other.id);",
+                  "  console.log('Saved sessionId =', other.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/sessions", "host": ["{{baseUrl}}"], "path": ["auth", "sessions"] }
+          },
+          "response": []
+        },
+        {
+          "name": "End Session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/sessions/{{sessionId}}", "host": ["{{baseUrl}}"], "path": ["auth", "sessions", "{{sessionId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "End All Sessions",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/sessions?keepCurrent=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "sessions"],
+              "query": [{ "key": "keepCurrent", "value": "true" }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "Create Permission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body && body.id) { pm.collectionVariables.set('permissionId', body.id); console.log('Saved permissionId =', body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"users.read\",\n  \"label\": \"عرض المستخدمين\",\n  \"description\": \"Can read users\"\n}" },
+            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Permission by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/permissions/{{permissionId}}", "host": ["{{baseUrl}}"], "path": ["permissions", "{{permissionId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Permission",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"label\": \"عرض سجلات المستخدمين\",\n  \"description\": \"Can read user records\"\n}" },
+            "url": { "raw": "{{baseUrl}}/permissions/{{permissionId}}", "host": ["{{baseUrl}}"], "path": ["permissions", "{{permissionId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Permission",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/permissions/{{permissionId}}", "host": ["{{baseUrl}}"], "path": ["permissions", "{{permissionId}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "isSystem roles (admin, security_officer, complaints.admin) are protected: DELETE → 403, rename → 403. isSystem cannot be set via the API. systemId links a role to an external system — omit it for IAM-native roles.",
+      "item": [
+        {
+          "name": "Create Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body && body.id) { pm.collectionVariables.set('roleId', body.id); console.log('Saved roleId =', body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"complaints.viewer\",\n  \"arabicName\": \"مشاهد الشكاوى\",\n  \"label\": \"مشاهد\",\n  \"description\": \"Read-only access to complaints\",\n  \"color\": \"#3b82f6\",\n  \"hasExpiry\": false,\n  \"isActive\": true,\n  \"systemId\": {{systemId}},\n  \"permissionIds\": [{{permissionId}}]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] },
+            "description": "Creates a role. `systemId` links it to an external system (omit for IAM-native roles). `isSystem` is NOT accepted — it is managed by the server only. `permissionIds` is optional; omit for no permissions."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] },
+            "description": "Returns all roles with their permissions and linked system. Scoped callers (e.g. complaints.admin) only see roles with a matching prefix."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Role by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["roles", "{{roleId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"arabicName\": \"مشاهد الشكاوى المحدث\",\n  \"color\": \"#6366f1\",\n  \"systemId\": {{systemId}},\n  \"permissionIds\": [{{permissionId}}]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["roles", "{{roleId}}"] },
+            "description": "Passing permissionIds REPLACES the permission set. Pass systemId to link/re-link to a system; pass null to detach. Renaming an isSystem role → 403."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["roles", "{{roleId}}"] },
+            "description": "Deleting an isSystem role → 403."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Systems",
+      "description": "نظام خارجي — an external software application (e.g. complaints) owned by a مديرية. A role linked to a system can only be assigned to users whose institution matches the system's institution.\n\nFlow: Create Institution (مديرية, level 2) → Create System with institutionId → Link roles via PATCH /roles/:id { systemId }.",
+      "item": [
+        {
+          "name": "Create System",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body && body.id) { pm.collectionVariables.set('systemId', body.id); console.log('Saved systemId =', body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"complaints\",\n  \"arabicName\": \"نظام الشكاوى والطلبات\",\n  \"description\": \"External complaints & requests system\",\n  \"isActive\": true,\n  \"institutionId\": {{institutionId}}\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/systems", "host": ["{{baseUrl}}"], "path": ["systems"] },
+            "description": "Creates a system. `name` must be unique. `institutionId` is optional — link to a مديرية. The complaints system is seeded automatically on boot; use PATCH to link it to an institution."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Systems",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/systems", "host": ["{{baseUrl}}"], "path": ["systems"] },
+            "description": "Returns all systems with their linked institution."
+          },
+          "response": []
+        },
+        {
+          "name": "Get System by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/systems/{{systemId}}", "host": ["{{baseUrl}}"], "path": ["systems", "{{systemId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update System",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"arabicName\": \"نظام الشكاوى\",\n  \"institutionId\": {{institutionId}}\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/systems/{{systemId}}", "host": ["{{baseUrl}}"], "path": ["systems", "{{systemId}}"] },
+            "description": "All fields optional. Pass institutionId to link/re-link to a مديرية; pass null to detach."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete System",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/systems/{{systemId}}", "host": ["{{baseUrl}}"], "path": ["systems", "{{systemId}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Users are linked to the institution hierarchy via three FK fields:\n- institutionId → مديرية (level 2)\n- departmentId → قسم (level 3)\n- unitId → وحدة (level 4)\n\nWhen assigning a system-scoped role, the user's institutionId must match the system's institutionId → 400 otherwise.",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body && body.id) { pm.collectionVariables.set('userId', body.id); console.log('Saved userId =', body.id); }",
+                  "pm.test('password is not returned', () => pm.expect(body).to.not.have.property('password'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"username\": \"user01\",\n  \"password\": \"password123\",\n  \"fullName\": \"محمد أحمد\",\n  \"nationalId\": \"01010101010\",\n  \"jobTitle\": \"مدير النظام\",\n  \"startDate\": \"2023-01-15\",\n  \"isActive\": true,\n  \"institutionId\": {{institutionId}},\n  \"departmentId\": null,\n  \"unitId\": null,\n  \"roleId\": {{roleId}}\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] },
+            "description": "Public (no token needed). institutionId → مديرية (level 2), departmentId → قسم (level 3), unitId → وحدة (level 4). All three are optional (nullable). If the role is system-scoped, institutionId must match the system's institution → 400 otherwise."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "institutionId", "value": "{{institutionId}}", "disabled": true, "description": "Filter by مديرية id." },
+                { "key": "departmentId", "value": "", "disabled": true, "description": "Filter by قسم id." },
+                { "key": "unitId", "value": "", "disabled": true, "description": "Filter by وحدة id." },
+                { "key": "roleId", "value": "{{roleId}}", "disabled": true, "description": "Filter by role id." },
+                { "key": "isActive", "value": "true", "disabled": true, "description": "true or false." }
+              ]
+            },
+            "description": "All filters are optional and combine (AND). No params = all users."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobTitle\": \"مدير عام\",\n  \"isActive\": true,\n  \"institutionId\": {{institutionId}},\n  \"departmentId\": null,\n  \"unitId\": null,\n  \"roleId\": {{roleId}}\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] },
+            "description": "All fields optional. Pass null for institutionId/departmentId/unitId/roleId to clear them; omit to leave unchanged. Changing roleId re-validates institution match."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}/permissions", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}", "permissions"] },
+            "description": "Returns rolePermissions, directPermissions, and the merged effective set."
+          },
+          "response": []
+        },
+        {
+          "name": "Grant Permissions to User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"permissionIds\": [{{permissionId}}]\n}" },
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}/permissions", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}", "permissions"] },
+            "description": "Additive direct grant. Keeps existing permissions; 404 if any id is unknown."
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke Permission from User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}/permissions/{{permissionId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}", "permissions", "{{permissionId}}"] },
+            "description": "Removes a single DIRECT permission. Role-derived permissions can't be revoked here."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Institutions",
+      "description": "Org tree: محافظة حمص (level 1, root) → مديريات (level 2) → أقسام (level 3) → وحدات (level 4). One root only. server computes level — never send it.",
+      "item": [
+        {
+          "name": "Create Institution",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body && body.id) { pm.collectionVariables.set('institutionId', body.id); console.log('Saved institutionId =', body.id, 'level', body.level); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"مديرية الصحة\",\n  \"type\": \"directorate\",\n  \"description\": \"مديرية صحة حمص\",\n  \"manager\": \"اسم المدير\",\n  \"managerRole\": \"مدير\",\n  \"parentId\": {{institutionId}}\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/institutions", "host": ["{{baseUrl}}"], "path": ["institutions"] },
+            "description": "Omit parentId (or set null) to create the root (محافظة حمص, level 1). Set parentId to create a child. type: governorate / directorate / department / unit. Never send level."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Institutions (flat)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/institutions", "host": ["{{baseUrl}}"], "path": ["institutions"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Institution Tree",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/institutions/tree", "host": ["{{baseUrl}}"], "path": ["institutions", "tree"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Institution by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/institutions/{{institutionId}}", "host": ["{{baseUrl}}"], "path": ["institutions", "{{institutionId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Institution",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"مديرية الصحة - المركز\",\n  \"isActive\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/institutions/{{institutionId}}", "host": ["{{baseUrl}}"], "path": ["institutions", "{{institutionId}}"] },
+            "description": "isActive cascades to the whole subtree. Add parentId to re-parent the node."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Institution",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/institutions/{{institutionId}}", "host": ["{{baseUrl}}"], "path": ["institutions", "{{institutionId}}"] },
+            "description": "Blocked if the node has children → 409."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Logs",
+      "description": "Audit log. Every IAM endpoint is auto-logged via a global interceptor. External systems (complaints) POST here with a service JWT.",
+      "item": [
+        {
+          "name": "Create Log",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body && body.id) { pm.collectionVariables.set('logId', body.id); console.log('Saved logId =', body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"procedureType\": \"create\",\n  \"state\": \"success\",\n  \"description\": \"Created a new record\",\n  \"ipAddress\": \"192.168.1.1\",\n  \"method\": \"POST\",\n  \"path\": \"/some/endpoint\",\n  \"statusCode\": 201,\n  \"metadata\": { \"key\": \"value\" }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/logs", "host": ["{{baseUrl}}"], "path": ["logs"] },
+            "description": "All fields optional except procedureType. metadata accepts any JSON object."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Logs (with filters)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["logs"],
+              "query": [
+                { "key": "startDate", "value": "2026-01-01", "disabled": true },
+                { "key": "endDate", "value": "2026-12-31", "disabled": true },
+                { "key": "userId", "value": "{{userId}}", "disabled": true },
+                { "key": "procedureType", "value": "login", "disabled": true },
+                { "key": "state", "value": "success", "disabled": true }
+              ]
+            },
+            "description": "All filters optional and combine (AND). No params = all logs, newest first."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Log by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/logs/{{logId}}", "host": ["{{baseUrl}}"], "path": ["logs", "{{logId}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Permission Requests",
+      "description": "Workflow for a user to request a direct permission. Starts pending → approved / rejected.\n\nFlow: Request New Permission → Approve/Reject → My Permission Requests.",
+      "item": [
+        {
+          "name": "Request New Permission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "if (body && body.id) { pm.collectionVariables.set('permissionRequestId', body.id); console.log('Saved permissionRequestId =', body.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"system\": \"نظام الموارد البشرية\",\n  \"permissionId\": {{permissionId}},\n  \"reason\": \"أحتاج هذه الصلاحية لإنجاز مهامي\",\n  \"startDate\": \"2026-07-01T08:00:00.000Z\",\n  \"endDate\": \"2026-12-31T23:59:59.000Z\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/permission-requests", "host": ["{{baseUrl}}"], "path": ["permission-requests"] },
+            "description": "startDate and endDate replace the old duration field. Both are optional ISO timestamps. Omit both for a permanent request."
+          },
+          "response": []
+        },
+        {
+          "name": "My Permission Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/permission-requests/mine", "host": ["{{baseUrl}}"], "path": ["permission-requests", "mine"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Permission Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/permission-requests?type=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["permission-requests"],
+              "query": [{ "key": "type", "value": "1", "description": "1=pending, 2=approved, 3=rejected. Omit for all." }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Permission Request by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/permission-requests/{{permissionRequestId}}", "host": ["{{baseUrl}}"], "path": ["permission-requests", "{{permissionRequestId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve / Reject Request",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"decision\": true,\n  \"note\": \"تمت الموافقة\"\n}" },
+            "url": { "raw": "{{baseUrl}}/permission-requests/{{permissionRequestId}}/review", "host": ["{{baseUrl}}"], "path": ["permission-requests", "{{permissionRequestId}}", "review"] },
+            "description": "decision: true = approve, false = reject. Reviewing a non-pending request → 409."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chatbot",
+      "description": "Public proxy to the external RAG chatbot.",
+      "item": [
+        {
+          "name": "Ask (public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"ما هو نظام IAM؟\",\n  \"history\": []\n}" },
+            "url": { "raw": "{{baseUrl}}/chatbot/ask", "host": ["{{baseUrl}}"], "path": ["chatbot", "ask"] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
