@@ -10,7 +10,6 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { InstitutionsModule } from './institutions/institutions.module';
 import { LogsModule } from './logs/logs.module';
 import { PermissionRequestsModule } from './permission-requests/permission-requests.module';
-import { PermissionGroupsModule } from './permission-groups/permission-groups.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { SeedModule } from './roles/seed.module';
 import { AuthModule } from './auth/auth.module';
@@ -22,7 +21,6 @@ import { Institution } from './institutions/entities/institution.entity';
 import { Log } from './logs/entities/log.entity';
 import { Session } from './auth/entities/session.entity';
 import { PermissionRequest } from './permission-requests/entities/permission-request.entity';
-import { PermissionGroup } from './permission-groups/entities/permission-group.entity';
 
 @Module({
   imports: [
@@ -42,7 +40,6 @@ import { PermissionGroup } from './permission-groups/entities/permission-group.e
         Log,
         Session,
         PermissionRequest,
-        PermissionGroup,
       ],
 
       synchronize: true,
@@ -54,7 +51,6 @@ import { PermissionGroup } from './permission-groups/entities/permission-group.e
     InstitutionsModule,
     LogsModule,
     PermissionRequestsModule,
-    PermissionGroupsModule,
     ChatbotModule,
     SeedModule,
   ],
