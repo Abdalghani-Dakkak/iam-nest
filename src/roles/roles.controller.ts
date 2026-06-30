@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  ParseIntPipe,
   Delete,
   Req,
 } from '@nestjs/common';
@@ -26,6 +27,11 @@ export class RolesController {
   @Get()
   findAll(@Req() req: Request & { user: JwtPayload }) {
     return this.rolesService.findAll(req.user.systemId);
+  }
+
+  @Get('by-institution/:institutionId')
+  findByInstitution(@Param('institutionId', ParseIntPipe) institutionId: number) {
+    return this.rolesService.findByInstitution(institutionId);
   }
 
   @Get(':id')

@@ -44,6 +44,13 @@ export class RolesService {
     });
   }
 
+  findByInstitution(institutionId: number): Promise<Role[]> {
+    return this.rolesRepository.find({
+      where: { system: { institution: { id: institutionId } } },
+      relations: { permissions: true, system: true },
+    });
+  }
+
   async findOne(id: number): Promise<Role> {
     const role = await this.rolesRepository.findOne({
       where: { id },
