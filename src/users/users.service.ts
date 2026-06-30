@@ -35,6 +35,7 @@ export class UsersService {
     const { roleId, institutionId, departmentId, unitId, password, ...data } =
       createUserDto;
     await this.assertEmailAvailable(data.email);
+    if (data.nationalId != null) await this.assertNationalIdAvailable(data.nationalId);
     const user = this.usersRepository.create(data);
     user.password = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
@@ -138,6 +139,9 @@ export class UsersService {
     if (data.email && data.email !== user.email) {
       await this.assertEmailAvailable(data.email);
     }
+    if (data.nationalId != null && data.nationalId !== user.nationalId) {
+      await this.assertNationalIdAvailable(data.nationalId);
+    }
     Object.assign(user, data);
 
     if (password) {
@@ -235,6 +239,13 @@ export class UsersService {
     const existing = await this.usersRepository.findOne({ where: { email } });
     if (existing) {
       throw new ConflictException(`User with email "${email}" already exists`);
+    }
+  }
+
+  private async assertNationalIdAvailable(nationalId: string): Promise<void> {
+    const existing = await this.usersRepository.findOne({ where: { nationalId } });
+    if (existing) {
+      throw new ConflictException(`National ID "${nationalId}" is already registered`);
     }
   }
 
