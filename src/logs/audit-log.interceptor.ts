@@ -21,7 +21,8 @@ export class AuditLogInterceptor implements NestInterceptor {
     const isHealth = method === 'GET' && path === '/';
     const isLogin = url.startsWith('/auth/login');
     const isLogsEndpoint = url.startsWith('/logs');
-    const skipRead = process.env.AUDIT_LOG_READS === 'false' && method === 'GET';
+    const skipRead =
+      process.env.AUDIT_LOG_READS === 'false' && method === 'GET';
     if (isHealth || isLogin || isLogsEndpoint || skipRead) {
       return next.handle();
     }
@@ -29,7 +30,7 @@ export class AuditLogInterceptor implements NestInterceptor {
     const xff = req.headers?.['x-forwarded-for'] as string | undefined;
     const base = {
       userId: req.user?.sub as number | undefined,
-      systemId: req.user?.systemId as number | undefined,
+      systemId: (req.user?.systemId ?? undefined) as number | undefined,
       procedureType: `${method} ${path}`.slice(0, 100),
       ipAddress: (xff?.split(',')[0]?.trim() || req.ip || undefined)?.slice(
         0,
@@ -49,7 +50,12 @@ export class AuditLogInterceptor implements NestInterceptor {
       description: string,
     ): void => {
       void this.logsService
-        .create({ ...base, state, statusCode, description: description.slice(0, 500) })
+        .create({
+          ...base,
+          state,
+          statusCode,
+          description: description.slice(0, 500),
+        })
         .catch(() => undefined);
     };
 

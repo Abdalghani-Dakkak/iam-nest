@@ -125,6 +125,7 @@ export class UsersService {
       .addSelect('user.password')
       .leftJoinAndSelect('user.role', 'role')
       .leftJoinAndSelect('role.permissions', 'permissions')
+      .leftJoinAndSelect('role.system', 'roleSystem')
       .where('user.email = :email', { email })
       .getOne();
   }

@@ -58,7 +58,6 @@ export class Log {
   @Column({ type: 'int', nullable: true })
   statusCode!: number | null;
 
-  // Flexible bucket for any extra structured data per log entry.
   @Column({ type: 'jsonb', nullable: true })
   metadata!: Record<string, any> | null;
 

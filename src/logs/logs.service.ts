@@ -32,7 +32,7 @@ export class LogsService {
     if (userId !== undefined) {
       log.user = await this.resolveUser(userId);
     }
-    if (systemId !== undefined) {
+    if (systemId != null) {
       const system = await this.systemsRepository.findOne({ where: { id: systemId } });
       log.system = system ?? null;
     }

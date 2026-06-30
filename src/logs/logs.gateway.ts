@@ -111,9 +111,11 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private matchesFilter(log: Log, filter?: LogFilter): boolean {
     if (!filter) return true;
     const logUserId = log.user?.id ?? log.userId ?? null;
-    if (filter.userId !== undefined && logUserId !== filter.userId) return false;
+    if (filter.userId !== undefined && logUserId !== filter.userId)
+      return false;
     const logSystemId = log.system?.id ?? log.systemId ?? null;
-    if (filter.systemId !== undefined && logSystemId !== filter.systemId) return false;
+    if (filter.systemId !== undefined && logSystemId !== filter.systemId)
+      return false;
 
     if (
       filter.procedureType !== undefined &&
