@@ -75,7 +75,10 @@ export class PermissionRequestsService {
     });
   }
 
-  findAll(type?: string): Promise<PermissionRequest[]> {
+  findAll(
+    type?: string,
+    callerSystemId?: number | null,
+  ): Promise<PermissionRequest[]> {
     const statusByType: Record<string, PermissionRequest['status']> = {
       '1': 'pending',
       '2': 'approved',
@@ -93,18 +96,32 @@ export class PermissionRequestsService {
     }
 
     return this.requestsRepository.find({
-      where: status ? { status } : {},
+      where: {
+        ...(status ? { status } : {}),
+        ...(callerSystemId != null
+          ? { permission: { system: { id: callerSystemId } } }
+          : {}),
+      },
       relations: { user: true, permission: true, reviewedBy: true },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findOne(id: number): Promise<PermissionRequest> {
+  async findOne(
+    id: number,
+    callerSystemId?: number | null,
+  ): Promise<PermissionRequest> {
     const request = await this.requestsRepository.findOne({
       where: { id },
       relations: { user: true, permission: true, reviewedBy: true },
     });
     if (!request) {
+      throw new NotFoundException(`Permission request #${id} not found`);
+    }
+    if (
+      callerSystemId != null &&
+      request.permission.systemId !== callerSystemId
+    ) {
       throw new NotFoundException(`Permission request #${id} not found`);
     }
     return request;
@@ -114,8 +131,9 @@ export class PermissionRequestsService {
     reviewerId: number,
     requestId: number,
     dto: ReviewPermissionRequestDto,
+    callerSystemId?: number | null,
   ): Promise<PermissionRequest> {
-    const request = await this.findOne(requestId);
+    const request = await this.findOne(requestId, callerSystemId);
     if (request.status !== 'pending') {
       throw new ConflictException(
         `Request #${requestId} has already been ${request.status}`,

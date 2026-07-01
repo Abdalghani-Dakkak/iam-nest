@@ -34,13 +34,16 @@ export class PermissionRequestsController {
   }
 
   @Get()
-  findAll(@Query('type') type?: string) {
-    return this.permissionRequestsService.findAll(type);
+  findAll(
+    @Query('type') type: string | undefined,
+    @Req() req: Request & { user: JwtPayload },
+  ) {
+    return this.permissionRequestsService.findAll(type, req.user.systemId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.permissionRequestsService.findOne(+id);
+  findOne(@Param('id') id: string, @Req() req: Request & { user: JwtPayload }) {
+    return this.permissionRequestsService.findOne(+id, req.user.systemId);
   }
 
   @Patch(':id/review')
@@ -49,6 +52,11 @@ export class PermissionRequestsController {
     @Param('id') id: string,
     @Body() dto: ReviewPermissionRequestDto,
   ) {
-    return this.permissionRequestsService.review(req.user.sub, +id, dto);
+    return this.permissionRequestsService.review(
+      req.user.sub,
+      +id,
+      dto,
+      req.user.systemId,
+    );
   }
 }
