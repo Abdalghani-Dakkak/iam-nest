@@ -13,7 +13,6 @@ import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import type { JwtPayload } from '../auth/jwt-auth.guard';
-import { roleScope } from '../auth/role-scope.util';
 
 @Controller('permissions')
 export class PermissionsController {
@@ -26,7 +25,7 @@ export class PermissionsController {
 
   @Get()
   findAll(@Req() req: Request & { user: JwtPayload }) {
-    return this.permissionsService.findAll(roleScope(req.user));
+    return this.permissionsService.findAll(req.user.systemId);
   }
 
   @Get(':id')

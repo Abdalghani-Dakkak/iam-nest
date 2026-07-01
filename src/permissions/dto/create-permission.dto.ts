@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsInt, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreatePermissionDto {
   @IsString()
@@ -14,4 +14,8 @@ export class CreatePermissionDto {
   @IsString()
   @MaxLength(255)
   description?: string;
+
+  @IsOptional()
+  @IsInt()
+  systemId?: number;
 }

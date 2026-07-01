@@ -3,9 +3,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToMany,
+  ManyToOne,
+  JoinColumn,
+  RelationId,
   CreateDateColumn,
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
+import { System } from '../../systems/entities/system.entity';
 
 @Entity()
 export class Permission {
@@ -23,6 +27,13 @@ export class Permission {
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  @ManyToOne(() => System, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'system_id' })
+  system!: System | null;
+
+  @RelationId((permission: Permission) => permission.system)
+  systemId!: number | null;
 
   @ManyToMany(() => Role, (role) => role.permissions)
   roles!: Role[];
