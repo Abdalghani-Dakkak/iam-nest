@@ -189,6 +189,7 @@
     },
     {
       "name": "Permissions",
+      "description": "systemId links a permission to an external system (omit/null for IAM-native permissions). GET /permissions is scoped automatically to the caller's systemId from their JWT (IAM-wide callers with systemId=null see everything).",
       "item": [
         {
           "name": "Create Permission",
@@ -208,8 +209,9 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"users.read\",\n  \"label\": \"عرض المستخدمين\",\n  \"description\": \"Can read users\"\n}" },
-            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] }
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"users.read\",\n  \"label\": \"عرض المستخدمين\",\n  \"description\": \"Can read users\",\n  \"systemId\": {{systemId}}\n}" },
+            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] },
+            "description": "systemId is optional — omit for an IAM-native permission."
           },
           "response": []
         },
@@ -218,7 +220,28 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] }
+            "url": { "raw": "{{baseUrl}}/permissions", "host": ["{{baseUrl}}"], "path": ["permissions"] },
+            "description": "Scoped to the caller's systemId from their JWT. IAM-wide callers (systemId=null) see all permissions."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Permissions by System",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/permissions/by-system/{{systemId}}", "host": ["{{baseUrl}}"], "path": ["permissions", "by-system", "{{systemId}}"] },
+            "description": "Returns all permissions linked to the given system id, regardless of caller's own systemId."
+          },
+          "response": []
+        },
+        {
+          "name": "Get IAM-only Permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/permissions/iam", "host": ["{{baseUrl}}"], "path": ["permissions", "iam"] },
+            "description": "Returns permissions with no system attached (systemId IS NULL) — the core IAM permission set."
           },
           "response": []
         },
@@ -236,8 +259,9 @@
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"label\": \"عرض سجلات المستخدمين\",\n  \"description\": \"Can read user records\"\n}" },
-            "url": { "raw": "{{baseUrl}}/permissions/{{permissionId}}", "host": ["{{baseUrl}}"], "path": ["permissions", "{{permissionId}}"] }
+            "body": { "mode": "raw", "raw": "{\n  \"label\": \"عرض سجلات المستخدمين\",\n  \"description\": \"Can read user records\",\n  \"systemId\": {{systemId}}\n}" },
+            "url": { "raw": "{{baseUrl}}/permissions/{{permissionId}}", "host": ["{{baseUrl}}"], "path": ["permissions", "{{permissionId}}"] },
+            "description": "All fields optional. Pass systemId to link/re-link to a system; pass null to detach."
           },
           "response": []
         },
@@ -289,7 +313,17 @@
             "method": "GET",
             "header": [],
             "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] },
-            "description": "Returns all roles with their permissions and linked system. Scoped callers (e.g. complaints.admin) only see roles with a matching prefix."
+            "description": "Returns all roles with their permissions and linked system. Scoped to the caller's systemId from their JWT (IAM-wide callers with systemId=null see all roles)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Roles by Institution",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/roles/by-institution/{{institutionId}}", "host": ["{{baseUrl}}"], "path": ["roles", "by-institution", "{{institutionId}}"] },
+            "description": "Returns roles belonging to systems owned by the given institution (role.system.institution.id = :institutionId)."
           },
           "response": []
         },
@@ -405,7 +439,7 @@
     },
     {
       "name": "Users",
-      "description": "Users are linked to the institution hierarchy via three FK fields:\n- institutionId → مديرية (level 2)\n- departmentId → قسم (level 3)\n- unitId → وحدة (level 4)\n\nWhen assigning a system-scoped role, the user's institutionId must match the system's institutionId → 400 otherwise.",
+      "description": "Users are linked to the institution hierarchy via three FK fields:\n- institutionId → مديرية (level 2)\n- departmentId → قسم (level 3)\n- unitId → وحدة (level 4)\n\nWhen assigning a system-scoped role, the user's institutionId must match the system's institutionId → 400 otherwise.\n\nGET /users is scoped to the caller's systemId from their JWT. Creating a user with a role that belongs to an external system (role.system set) auto-grants directPermissions [self:request_access, self:request_extension, self:update_profile, settings:view].",
       "item": [
         {
           "name": "Create User",
@@ -607,7 +641,7 @@
     },
     {
       "name": "Logs",
-      "description": "Audit log. Every IAM endpoint is auto-logged via a global interceptor. External systems (complaints) POST here with a service JWT.",
+      "description": "Audit log. Every IAM endpoint is auto-logged via a global interceptor, stamped with the caller's systemId at the time of the action. External systems (complaints) POST here with a service JWT.\n\nGET /logs and GET /logs/:id are scoped to the caller's systemId from their JWT — system-scoped callers (e.g. complaints.admin) only ever see logs stamped with their own systemId; the systemId query param is ignored for them. IAM-wide callers (systemId=null) see everything and can optionally filter by systemId.",
       "item": [
         {
           "name": "Create Log",
@@ -629,7 +663,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": {{userId}},\n  \"procedureType\": \"create\",\n  \"state\": \"success\",\n  \"description\": \"Created a new record\",\n  \"ipAddress\": \"192.168.1.1\",\n  \"method\": \"POST\",\n  \"path\": \"/some/endpoint\",\n  \"statusCode\": 201,\n  \"metadata\": { \"key\": \"value\" }\n}"
+              "raw": "{\n  \"userId\": {{userId}},\n  \"systemId\": {{systemId}},\n  \"procedureType\": \"create\",\n  \"state\": \"success\",\n  \"description\": \"Created a new record\",\n  \"ipAddress\": \"192.168.1.1\",\n  \"method\": \"POST\",\n  \"path\": \"/some/endpoint\",\n  \"statusCode\": 201,\n  \"metadata\": { \"key\": \"value\" }\n}"
             },
             "url": { "raw": "{{baseUrl}}/logs", "host": ["{{baseUrl}}"], "path": ["logs"] },
             "description": "All fields optional except procedureType. metadata accepts any JSON object."
@@ -649,11 +683,12 @@
                 { "key": "startDate", "value": "2026-01-01", "disabled": true },
                 { "key": "endDate", "value": "2026-12-31", "disabled": true },
                 { "key": "userId", "value": "{{userId}}", "disabled": true },
+                { "key": "systemId", "value": "{{systemId}}", "disabled": true, "description": "Ignored for system-scoped callers - their own systemId is enforced instead." },
                 { "key": "procedureType", "value": "login", "disabled": true },
                 { "key": "state", "value": "success", "disabled": true }
               ]
             },
-            "description": "All filters optional and combine (AND). No params = all logs, newest first."
+            "description": "All filters optional and combine (AND). No params = all logs, newest first, scoped by caller's systemId."
           },
           "response": []
         },
@@ -662,7 +697,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/logs/{{logId}}", "host": ["{{baseUrl}}"], "path": ["logs", "{{logId}}"] }
+            "url": { "raw": "{{baseUrl}}/logs/{{logId}}", "host": ["{{baseUrl}}"], "path": ["logs", "{{logId}}"] },
+            "description": "404 if the log belongs to a different system than the caller's (for system-scoped callers)."
           },
           "response": []
         }
