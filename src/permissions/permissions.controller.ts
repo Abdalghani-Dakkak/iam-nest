@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  ParseIntPipe,
   Delete,
   Req,
 } from '@nestjs/common';
@@ -26,6 +27,11 @@ export class PermissionsController {
   @Get()
   findAll(@Req() req: Request & { user: JwtPayload }) {
     return this.permissionsService.findAll(req.user.systemId);
+  }
+
+  @Get('by-system/:systemId')
+  findBySystem(@Param('systemId', ParseIntPipe) systemId: number) {
+    return this.permissionsService.findAll(systemId);
   }
 
   @Get(':id')
