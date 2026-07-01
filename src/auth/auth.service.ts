@@ -67,7 +67,7 @@ export class AuthService {
       permissionNames,
     );
     await this.recordLogin(user, 'success', null, meta);
-    return this.buildAuthResult(user, tokens);
+    return this.buildAuthResult(user, tokens, permissionEntities);
   }
 
   updateProfile(userId: number, dto: UpdateProfileDto): Promise<User> {
@@ -119,9 +119,12 @@ export class AuthService {
     }
   }
 
-  private buildAuthResult(user: User, tokens: AuthTokens): AuthResult {
+  private buildAuthResult(
+    user: User,
+    tokens: AuthTokens,
+    permissions: Permission[],
+  ): AuthResult {
     const { password, role, ...userInfo } = user;
-    const permissions = role?.permissions ?? [];
 
     let roleInfo: AuthResult['role'] = null;
     if (role) {
