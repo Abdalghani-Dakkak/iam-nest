@@ -58,7 +58,6 @@ export class PermissionRequestsService {
     const request = this.requestsRepository.create({
       user: { id: userId } as User,
       permission,
-      system: dto.system,
       reason: dto.reason,
       startDate: dto.startDate ? new Date(dto.startDate) : null,
       endDate: dto.endDate ? new Date(dto.endDate) : null,

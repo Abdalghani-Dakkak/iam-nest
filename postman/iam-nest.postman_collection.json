@@ -728,7 +728,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"system\": \"نظام الموارد البشرية\",\n  \"permissionId\": {{permissionId}},\n  \"reason\": \"أحتاج هذه الصلاحية لإنجاز مهامي\",\n  \"startDate\": \"2026-07-01T08:00:00.000Z\",\n  \"endDate\": \"2026-12-31T23:59:59.000Z\"\n}"
+              "raw": "{\n  \"permissionId\": {{permissionId}},\n  \"reason\": \"أحتاج هذه الصلاحية لإنجاز مهامي\",\n  \"startDate\": \"2026-07-01T08:00:00.000Z\",\n  \"endDate\": \"2026-12-31T23:59:59.000Z\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/permission-requests", "host": ["{{baseUrl}}"], "path": ["permission-requests"] },
             "description": "startDate and endDate replace the old duration field. Both are optional ISO timestamps. Omit both for a permanent request."

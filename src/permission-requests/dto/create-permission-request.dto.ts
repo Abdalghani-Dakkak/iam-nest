@@ -7,10 +7,6 @@ import {
 } from 'class-validator';
 
 export class CreatePermissionRequestDto {
-  @IsString()
-  @MaxLength(255)
-  system!: string;
-
   @IsInt()
   permissionId!: number;
 

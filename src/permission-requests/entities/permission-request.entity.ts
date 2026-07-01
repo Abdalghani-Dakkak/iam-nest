@@ -32,9 +32,6 @@ export class PermissionRequest {
   @RelationId((request: PermissionRequest) => request.permission)
   permissionId!: number;
 
-  @Column({ type: 'varchar', length: 255 })
-  system!: string;
-
   @Column({ type: 'timestamp', nullable: true })
   startDate!: Date | null;
 
