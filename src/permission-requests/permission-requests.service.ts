@@ -42,6 +42,23 @@ export class PermissionRequestsService {
       throw new ConflictException('You already have this permission');
     }
 
+    const now = new Date();
+    const approved = await this.requestsRepository.find({
+      where: {
+        user: { id: userId },
+        permission: { id: permission.id },
+        status: 'approved',
+      },
+    });
+    const hasActiveApproval = approved.some(
+      (r) =>
+        (r.startDate == null || r.startDate <= now) &&
+        (r.endDate == null || r.endDate > now),
+    );
+    if (hasActiveApproval) {
+      throw new ConflictException('You already have this permission');
+    }
+
     const pending = await this.requestsRepository.findOne({
       where: {
         user: { id: userId },
@@ -142,35 +159,12 @@ export class PermissionRequestsService {
       );
     }
 
-    if (dto.decision) {
-      await this.grantPermission(request.userId, request.permission);
-      request.status = 'approved';
-    } else {
-      request.status = 'rejected';
-    }
+    request.status = dto.decision ? 'approved' : 'rejected';
     request.reviewedBy = { id: reviewerId } as User;
     request.reviewNote = dto.note ?? null;
     request.reviewedAt = new Date();
 
     await this.requestsRepository.save(request);
     return this.getById(requestId);
-  }
-
-  private async grantPermission(
-    userId: number,
-    permission: Permission,
-  ): Promise<void> {
-    const user = await this.usersRepository.findOne({
-      where: { id: userId },
-      relations: { directPermissions: true },
-    });
-    if (!user) {
-      throw new NotFoundException(`User #${userId} not found`);
-    }
-    if (user.directPermissions.some((p) => p.id === permission.id)) {
-      return;
-    }
-    user.directPermissions.push(permission);
-    await this.usersRepository.save(user);
   }
 }

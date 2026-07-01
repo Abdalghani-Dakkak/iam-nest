@@ -174,15 +174,8 @@ export class AuthService {
   }
 
   async getMyPermissions(userId: number): Promise<Permission[]> {
-    const user = await this.usersService.findWithPermissions(userId);
-    const byId = new Map<number, Permission>();
-    for (const permission of user.role?.permissions ?? []) {
-      byId.set(permission.id, permission);
-    }
-    for (const permission of user.directPermissions ?? []) {
-      byId.set(permission.id, permission);
-    }
-    return [...byId.values()];
+    const { effective } = await this.usersService.getUserPermissions(userId);
+    return effective;
   }
 
   async getActiveSessions(userId: number, currentSid?: number) {

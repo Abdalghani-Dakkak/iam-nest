@@ -12,6 +12,7 @@ import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Institution } from '../institutions/entities/institution.entity';
+import { PermissionRequest } from '../permission-requests/entities/permission-request.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
@@ -30,6 +31,8 @@ export class UsersService {
     private readonly permissionsRepository: Repository<Permission>,
     @InjectRepository(Institution)
     private readonly institutionsRepository: Repository<Institution>,
+    @InjectRepository(PermissionRequest)
+    private readonly permissionRequestsRepository: Repository<PermissionRequest>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -120,12 +123,31 @@ export class UsersService {
     const user = await this.findWithPermissions(id);
     const rolePermissions = user.role?.permissions ?? [];
     const directPermissions = user.directPermissions ?? [];
+    const temporaryPermissions = await this.getActiveRequestedPermissions(id);
 
     const byId = new Map<number, Permission>();
     for (const p of rolePermissions) byId.set(p.id, p);
     for (const p of directPermissions) byId.set(p.id, p);
+    for (const p of temporaryPermissions) byId.set(p.id, p);
 
     return { rolePermissions, directPermissions, effective: [...byId.values()] };
+  }
+
+  private async getActiveRequestedPermissions(
+    userId: number,
+  ): Promise<Permission[]> {
+    const now = new Date();
+    const approved = await this.permissionRequestsRepository.find({
+      where: { user: { id: userId }, status: 'approved' },
+      relations: { permission: true },
+    });
+    return approved
+      .filter(
+        (r) =>
+          (r.startDate == null || r.startDate <= now) &&
+          (r.endDate == null || r.endDate > now),
+      )
+      .map((r) => r.permission);
   }
 
   findByEmailWithPassword(email: string): Promise<User | null> {
