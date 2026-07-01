@@ -17,6 +17,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 
 const BCRYPT_ROUNDS = 10;
+const DEFAULT_SYSTEM_USER_PERMISSION_IDS = [35, 36, 37, 38];
 
 @Injectable()
 export class UsersService {
@@ -47,10 +48,17 @@ export class UsersService {
     user.unit =
       unitId != null ? await this.resolveInstitution(unitId) : null;
 
-    user.role =
+    const role =
       roleId != null
         ? await this.resolveRole(roleId, institution?.id ?? null)
         : null;
+    user.role = role;
+
+    if (role?.system) {
+      user.directPermissions = await this.permissionsRepository.findBy({
+        id: In(DEFAULT_SYSTEM_USER_PERMISSION_IDS),
+      });
+    }
 
     const saved = await this.usersRepository.save(user);
     return this.findOne(saved.id);
