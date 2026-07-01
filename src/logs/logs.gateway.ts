@@ -44,6 +44,7 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(LogsGateway.name);
   private readonly clients = new Map<string, Socket>();
   private readonly clientFilters = new Map<string, LogFilter>();
+  private readonly clientSystemIds = new Map<string, number | null>();
 
   @WebSocketServer()
   server!: Server;
@@ -58,11 +59,13 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     try {
-      await this.jwtService.verifyAsync<JwtPayload>(token, {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: jwtConstants.secret,
       });
+      const callerSystemId = payload.systemId ?? null;
+      this.clientSystemIds.set(client.id, callerSystemId);
       const auth = client.handshake.auth as HandshakeAuth;
-      const filter = this.normalizeFilter(auth.filter);
+      const filter = this.buildFilter(auth.filter, callerSystemId);
       if (filter) this.clientFilters.set(client.id, filter);
       this.clients.set(client.id, client);
       client.emit('connected', {
@@ -78,6 +81,7 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(client: Socket): void {
     this.clients.delete(client.id);
     this.clientFilters.delete(client.id);
+    this.clientSystemIds.delete(client.id);
   }
 
   @SubscribeMessage('subscribe')
@@ -85,7 +89,8 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() filter: unknown,
   ): void {
-    const f = this.normalizeFilter(filter);
+    const callerSystemId = this.clientSystemIds.get(client.id) ?? null;
+    const f = this.buildFilter(filter, callerSystemId);
     if (f) {
       this.clientFilters.set(client.id, f);
     } else {
@@ -129,6 +134,15 @@ export class LogsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     )
       return false;
     return true;
+  }
+
+  private buildFilter(
+    raw: unknown,
+    callerSystemId: number | null,
+  ): LogFilter | undefined {
+    const filter = this.normalizeFilter(raw) ?? {};
+    if (callerSystemId != null) filter.systemId = callerSystemId;
+    return Object.keys(filter).length ? filter : undefined;
   }
 
   private normalizeFilter(raw: unknown): LogFilter | undefined {

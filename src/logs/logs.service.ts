@@ -41,7 +41,10 @@ export class LogsService {
     return saved;
   }
 
-  findAll(query: QueryLogsDto = {}): Promise<Log[]> {
+  findAll(
+    query: QueryLogsDto = {},
+    callerSystemId?: number | null,
+  ): Promise<Log[]> {
     const where: FindOptionsWhere<Log> = {};
 
     if (query.userId !== undefined) {
@@ -56,7 +59,9 @@ export class LogsService {
     if (query.department !== undefined) {
       where.department = query.department;
     }
-    if (query.systemId !== undefined) {
+    if (callerSystemId != null) {
+      where.system = { id: callerSystemId };
+    } else if (query.systemId !== undefined) {
       where.system = { id: query.systemId };
     }
 
@@ -72,12 +77,15 @@ export class LogsService {
     });
   }
 
-  async findOne(id: number): Promise<Log> {
+  async findOne(id: number, callerSystemId?: number | null): Promise<Log> {
     const log = await this.logsRepository.findOne({
       where: { id },
       relations: { user: true, system: true },
     });
     if (!log) {
+      throw new NotFoundException(`Log #${id} not found`);
+    }
+    if (callerSystemId != null && log.systemId !== callerSystemId) {
       throw new NotFoundException(`Log #${id} not found`);
     }
     return log;
