@@ -64,7 +64,7 @@ export class PermissionRequestsService {
       status: 'pending',
     });
     const saved = await this.requestsRepository.save(request);
-    return this.findOne(saved.id);
+    return this.getById(saved.id);
   }
 
   findMine(userId: number): Promise<PermissionRequest[]> {
@@ -111,14 +111,19 @@ export class PermissionRequestsService {
     id: number,
     callerSystemId?: number | null,
   ): Promise<PermissionRequest> {
+    const request = await this.getById(id);
+    if (request.permission.systemId !== (callerSystemId ?? null)) {
+      throw new NotFoundException(`Permission request #${id} not found`);
+    }
+    return request;
+  }
+
+  private async getById(id: number): Promise<PermissionRequest> {
     const request = await this.requestsRepository.findOne({
       where: { id },
       relations: { user: true, permission: true, reviewedBy: true },
     });
     if (!request) {
-      throw new NotFoundException(`Permission request #${id} not found`);
-    }
-    if (request.permission.systemId !== (callerSystemId ?? null)) {
       throw new NotFoundException(`Permission request #${id} not found`);
     }
     return request;
@@ -148,7 +153,7 @@ export class PermissionRequestsService {
     request.reviewedAt = new Date();
 
     await this.requestsRepository.save(request);
-    return this.findOne(requestId);
+    return this.getById(requestId);
   }
 
   private async grantPermission(
