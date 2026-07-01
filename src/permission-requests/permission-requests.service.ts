@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { PermissionRequest } from './entities/permission-request.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { User } from '../users/entities/user.entity';
@@ -98,9 +98,9 @@ export class PermissionRequestsService {
     return this.requestsRepository.find({
       where: {
         ...(status ? { status } : {}),
-        ...(callerSystemId != null
-          ? { permission: { system: { id: callerSystemId } } }
-          : {}),
+        permission: {
+          system: callerSystemId != null ? { id: callerSystemId } : IsNull(),
+        },
       },
       relations: { user: true, permission: true, reviewedBy: true },
       order: { createdAt: 'DESC' },
@@ -118,10 +118,7 @@ export class PermissionRequestsService {
     if (!request) {
       throw new NotFoundException(`Permission request #${id} not found`);
     }
-    if (
-      callerSystemId != null &&
-      request.permission.systemId !== callerSystemId
-    ) {
+    if (request.permission.systemId !== (callerSystemId ?? null)) {
       throw new NotFoundException(`Permission request #${id} not found`);
     }
     return request;
