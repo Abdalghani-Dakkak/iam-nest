@@ -34,6 +34,11 @@ export class PermissionsController {
     return this.permissionsService.findAll(systemId);
   }
 
+  @Get('iam')
+  findIamOnly() {
+    return this.permissionsService.findIamOnly();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.permissionsService.findOne(+id);

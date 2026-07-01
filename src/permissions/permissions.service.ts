@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Permission } from './entities/permission.entity';
 import { System } from '../systems/entities/system.entity';
 import { CreatePermissionDto } from './dto/create-permission.dto';
@@ -33,6 +33,13 @@ export class PermissionsService {
   findAll(systemId?: number | null): Promise<Permission[]> {
     return this.permissionsRepository.find({
       where: systemId != null ? { system: { id: systemId } } : {},
+      relations: { system: true },
+    });
+  }
+
+  findIamOnly(): Promise<Permission[]> {
+    return this.permissionsRepository.find({
+      where: { system: IsNull() },
       relations: { system: true },
     });
   }
